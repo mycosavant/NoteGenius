@@ -1,73 +1,166 @@
-# app01/views.py
-from django.shortcuts import render, get_object_or_404
-from django.http import HttpResponse, JsonResponse
-from . import models
-from .utils import translate_text, summarize_text, rewrite_text
+import json
+from django.http import JsonResponse, HttpResponse
+from django.shortcuts import get_object_or_404
+from django.views.decorators.http import require_http_methods
+from django.views.decorators.csrf import csrf_exempt
+from django.db.models import Q
 
+from .models import User, Note, Tag
 def index(request):
-    return HttpResponse("歡迎來到筆記管理系統！")
-
-def add_user(request):
-    email = "user1@example.com"
-    password = "password123"
-    # 如果這個 email 的使用者已經存在，就不再建立
-    if models.User.objects.filter(email=email).exists():
-        return HttpResponse("使用者已存在，跳過新增。")
-    # 否則才建立
-    models.User.objects.create(email=email, password=password)
-    return HttpResponse("使用者添加成功！")
-
-def add_category(request):
-    user = models.User.objects.first()
-    if not user:
-        return HttpResponse("請先添加一個使用者！")
-    name = "技術筆記"
-    # 同理：先檢查相同 user + name 的分類是否存在
-    if models.Category.objects.filter(user=user, name=name).exists():
-        return HttpResponse("分類已存在，跳過新增。")
-    models.Category.objects.create(name=name, user=user)
-    return HttpResponse("分類添加成功！")
-
-def add_note(request):
-    user = models.User.objects.first()
-    category = models.Category.objects.first()
-    if not user or not category:
-        return HttpResponse("請先添加一個使用者與分類！")
-    title = "我的第一篇筆記"
-    content = "# 這是一篇 Markdown 筆記\n- 項目 1\n- 項目 2"
-    # 先檢查完全相同的 note 是否已經有了
-    if models.Note.objects.filter(user=user, category=category, title=title).exists():
-        return HttpResponse("筆記已存在，跳過新增。")
-    models.Note.objects.create(
-        title=title,
-        content=content,
-        category=category,
-        user=user
+    return HttpResponse("Welcome to the Note API")
+@csrf_exempt
+@require_http_methods(["POST"])
+def create_note(request):
+    """
+    建立新筆記
+    JSON BODY:
+      {
+        "user_id": 1,
+        "title": "標題",
+        "content": "內容",
+        "parent_id": 2,         # 可選
+        "tags": ["tag1","tag2"] # 可選
+      }
+    """
+    data = json.loads(request.body or "{}")
+    user = get_object_or_404(User, id=data.get("user_id"))
+    note = Note.objects.create(
+        user=user,
+        title=data.get("title", ""),
+        content=data.get("content", ""),
+        parent_id=data.get("parent_id")
     )
-    return HttpResponse("筆記添加成功！")
+    for name in data.get("tags", []):
+        tag, _ = Tag.objects.get_or_create(name=name)
+        note.tags.add(tag)
+    return JsonResponse({
+        "id": note.id,
+        "user_id": note.user_id,
+        "title": note.title,
+        "content": note.content,
+        "parent_id": note.parent_id,
+        "tags": [t.name for t in note.tags.all()],
+        "created_at": note.created_at,
+    }, status=201)
 
-def delete_note(request):
-    models.Note.objects.filter(title="我的第一篇筆記").delete()
-    return HttpResponse("筆記刪除成功！")
+@csrf_exempt
+@require_http_methods(["GET"])
+def list_notes(request):
+    """
+    列出所有筆記
+    """
+    qs = Note.objects.all().order_by("-created_at")
+    data = [{
+        "id": n.id,
+        "user_id": n.user_id,
+        "title": n.title,
+        "content": n.content,
+        "parent_id": n.parent_id,
+        "tags": [t.name for t in n.tags.all()],
+        "created_at": n.created_at,
+    } for n in qs]
+    return JsonResponse(data, safe=False)
 
-# 以下三個不動
-def translate_note(request, note_id):
-    note = get_object_or_404(models.Note, id=note_id)
-    translated = translate_text(note.content)
-    note.translated_content = translated
-    note.save(update_fields=["translated_content"])
-    return JsonResponse({"translated_content": translated})
+@csrf_exempt
+@require_http_methods(["GET"])
+def retrieve_note(request, note_id):
+    """
+    讀取單筆筆記
+    """
+    n = get_object_or_404(Note, id=note_id)
+    return JsonResponse({
+        "id": n.id,
+        "user_id": n.user_id,
+        "title": n.title,
+        "content": n.content,
+        "parent_id": n.parent_id,
+        "tags": [t.name for t in n.tags.all()],
+        "created_at": n.created_at,
+    })
 
-def summarize_note(request, note_id):
-    note = get_object_or_404(models.Note, id=note_id)
-    summary = summarize_text(note.content)
-    note.summary = summary
-    note.save(update_fields=["summary"])
-    return JsonResponse({"summary": summary})
+@csrf_exempt
+@require_http_methods(["PUT"])
+def update_note(request, note_id):
+    """
+    更新筆記（含標籤）
+    JSON BODY 可只傳想改的欄位：
+      {
+        "title": "...",
+        "content": "...",
+        "parent_id": 3,
+        "tags": ["new","list"]
+      }
+    """
+    n = get_object_or_404(Note, id=note_id)
+    data = json.loads(request.body or "{}")
+    n.title     = data.get("title", n.title)
+    n.content   = data.get("content", n.content)
+    n.parent_id = data.get("parent_id", n.parent_id)
+    n.save()
+    if "tags" in data:
+        n.tags.clear()
+        for name in data["tags"]:
+            tag, _ = Tag.objects.get_or_create(name=name)
+            n.tags.add(tag)
+    return JsonResponse({
+        "id": n.id,
+        "user_id": n.user_id,
+        "title": n.title,
+        "content": n.content,
+        "parent_id": n.parent_id,
+        "tags": [t.name for t in n.tags.all()],
+        "created_at": n.created_at,
+    })
 
-def rewrite_note(request, note_id):
-    note = get_object_or_404(models.Note, id=note_id)
-    rewritten = rewrite_text(note.content)
-    note.rewritten_content = rewritten
-    note.save(update_fields=["rewritten_content"])
-    return JsonResponse({"rewritten_content": rewritten})
+@csrf_exempt
+@require_http_methods(["DELETE"])
+def delete_note(request, note_id):
+    """
+    刪除筆記
+    """
+    n = get_object_or_404(Note, id=note_id)
+    n.delete()
+    return HttpResponse(status=204)
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def notes_by_tag(request, tag_name):
+    """
+    以標籤名稱查詢所有含該標籤的筆記
+    URL 範例: GET /app01/notes/tag/python/
+    """
+    # 1. 取得 Tag，不存在自動 404
+    tag = get_object_or_404(Tag, name=tag_name)
+    # 2. 透過 related_name 拿到所有關聯的 Note
+    notes = tag.notes.all().order_by("-created_at")
+    data = [{
+        "id":         n.id,
+        "user_id":    n.user_id,
+        "title":      n.title,
+        "content":    n.content,
+        "parent_id":  n.parent_id,
+        "tags":       [t.name for t in n.tags.all()],
+        "created_at": n.created_at,
+    } for n in notes]
+    return JsonResponse(data, safe=False)
+@csrf_exempt
+@require_http_methods(["GET"])
+def search_notes(request):
+    """
+    以 title 關鍵字做模糊搜尋
+    URL 範例: GET /app01/notes/search/?title=測試
+    """
+    q = request.GET.get("title", "")
+    # __icontains 不分大小寫模糊比對
+    notes = Note.objects.filter(title__icontains=q).order_by("-created_at")
+    data = [{
+        "id":         n.id,
+        "user_id":    n.user_id,
+        "title":      n.title,
+        "content":    n.content,
+        "parent_id":  n.parent_id,
+        "tags":       [t.name for t in n.tags.all()],
+        "created_at": n.created_at,
+    } for n in notes]
+    return JsonResponse(data, safe=False)

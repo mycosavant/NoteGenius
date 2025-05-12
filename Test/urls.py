@@ -22,4 +22,5 @@ urlpatterns = [
     path('app01/', include('app01.urls')),
     path('', views.index),
     
+
 ]
