@@ -1,3 +1,4 @@
+""" 串接gemini ai api 暫時用不到
 import os
 from google.oauth2 import service_account
 import vertexai
@@ -40,3 +41,4 @@ def summarize_text(text: str) -> str:
 
 def rewrite_text(text: str) -> str:
     return ask_gemini(f"請將下列內容改寫成更專業、簡潔的語氣：\n{text}")
+"""
