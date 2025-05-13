@@ -3,25 +3,37 @@ from django.http import JsonResponse, HttpResponse
 from django.shortcuts import get_object_or_404
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.hashers import make_password
 from django.db.models import Q
 
 from .models import User, Note, Tag
+
 def index(request):
     return HttpResponse("Welcome to the Note API")
+
+# 公用函數
+def note_to_json(note):
+    return {
+        "id": note.id,
+        "user_id": note.user_id,
+        "title": note.title,
+        "content": note.content,
+        "parent_id": note.parent_id,
+        "tags": [t.name for t in note.tags.all()],
+        "created_at": note.created_at.isoformat(),
+    }
+
+def update_note_tags(note, tags_data):
+    if tags_data:
+        note.tags.clear()
+        for name in tags_data:
+            tag, _ = Tag.objects.get_or_create(name=name)
+            note.tags.add(tag)
+
+# Note CRUD
 @csrf_exempt
 @require_http_methods(["POST"])
 def create_note(request):
-    """
-    建立新筆記
-    JSON BODY:
-      {
-        "user_id": 1,
-        "title": "標題",
-        "content": "內容",
-        "parent_id": 2,         # 可選
-        "tags": ["tag1","tag2"] # 可選
-      }
-    """
     data = json.loads(request.body or "{}")
     user = get_object_or_404(User, id=data.get("user_id"))
     note = Note.objects.create(
@@ -30,137 +42,152 @@ def create_note(request):
         content=data.get("content", ""),
         parent_id=data.get("parent_id")
     )
-    for name in data.get("tags", []):
-        tag, _ = Tag.objects.get_or_create(name=name)
-        note.tags.add(tag)
-    return JsonResponse({
-        "id": note.id,
-        "user_id": note.user_id,
-        "title": note.title,
-        "content": note.content,
-        "parent_id": note.parent_id,
-        "tags": [t.name for t in note.tags.all()],
-        "created_at": note.created_at,
-    }, status=201)
+    update_note_tags(note, data.get("tags"))
+    return JsonResponse(note_to_json(note), status=201)
 
 @csrf_exempt
 @require_http_methods(["GET"])
 def list_notes(request):
-    """
-    列出所有筆記
-    """
     qs = Note.objects.all().order_by("-created_at")
-    data = [{
-        "id": n.id,
-        "user_id": n.user_id,
-        "title": n.title,
-        "content": n.content,
-        "parent_id": n.parent_id,
-        "tags": [t.name for t in n.tags.all()],
-        "created_at": n.created_at,
-    } for n in qs]
+    data = [note_to_json(n) for n in qs]
     return JsonResponse(data, safe=False)
 
 @csrf_exempt
 @require_http_methods(["GET"])
 def retrieve_note(request, note_id):
-    """
-    讀取單筆筆記
-    """
     n = get_object_or_404(Note, id=note_id)
-    return JsonResponse({
-        "id": n.id,
-        "user_id": n.user_id,
-        "title": n.title,
-        "content": n.content,
-        "parent_id": n.parent_id,
-        "tags": [t.name for t in n.tags.all()],
-        "created_at": n.created_at,
-    })
+    return JsonResponse(note_to_json(n))
 
 @csrf_exempt
 @require_http_methods(["PUT"])
 def update_note(request, note_id):
-    """
-    更新筆記（含標籤）
-    JSON BODY 可只傳想改的欄位：
-      {
-        "title": "...",
-        "content": "...",
-        "parent_id": 3,
-        "tags": ["new","list"]
-      }
-    """
     n = get_object_or_404(Note, id=note_id)
     data = json.loads(request.body or "{}")
-    n.title     = data.get("title", n.title)
-    n.content   = data.get("content", n.content)
+    n.title = data.get("title", n.title)
+    n.content = data.get("content", n.content)
     n.parent_id = data.get("parent_id", n.parent_id)
     n.save()
-    if "tags" in data:
-        n.tags.clear()
-        for name in data["tags"]:
-            tag, _ = Tag.objects.get_or_create(name=name)
-            n.tags.add(tag)
-    return JsonResponse({
-        "id": n.id,
-        "user_id": n.user_id,
-        "title": n.title,
-        "content": n.content,
-        "parent_id": n.parent_id,
-        "tags": [t.name for t in n.tags.all()],
-        "created_at": n.created_at,
-    })
+    update_note_tags(n, data.get("tags"))
+    return JsonResponse(note_to_json(n))
 
 @csrf_exempt
 @require_http_methods(["DELETE"])
 def delete_note(request, note_id):
-    """
-    刪除筆記
-    """
     n = get_object_or_404(Note, id=note_id)
     n.delete()
     return HttpResponse(status=204)
 
-
 @csrf_exempt
 @require_http_methods(["GET"])
 def notes_by_tag(request, tag_name):
-    """
-    以標籤名稱查詢所有含該標籤的筆記
-    URL 範例: GET /app01/notes/tag/python/
-    """
-    # 1. 取得 Tag，不存在自動 404
     tag = get_object_or_404(Tag, name=tag_name)
-    # 2. 透過 related_name 拿到所有關聯的 Note
     notes = tag.notes.all().order_by("-created_at")
-    data = [{
-        "id":         n.id,
-        "user_id":    n.user_id,
-        "title":      n.title,
-        "content":    n.content,
-        "parent_id":  n.parent_id,
-        "tags":       [t.name for t in n.tags.all()],
-        "created_at": n.created_at,
-    } for n in notes]
+    data = [note_to_json(n) for n in notes]
     return JsonResponse(data, safe=False)
+
 @csrf_exempt
 @require_http_methods(["GET"])
 def search_notes(request):
-    """
-    以 title 關鍵字做模糊搜尋
-    URL 範例: GET /app01/notes/search/?title=測試
-    """
     q = request.GET.get("title", "")
-    # __icontains 不分大小寫模糊比對
     notes = Note.objects.filter(title__icontains=q).order_by("-created_at")
-    data = [{
-        "id":         n.id,
-        "user_id":    n.user_id,
-        "title":      n.title,
-        "content":    n.content,
-        "parent_id":  n.parent_id,
-        "tags":       [t.name for t in n.tags.all()],
-        "created_at": n.created_at,
-    } for n in notes]
+    data = [note_to_json(n) for n in notes]
     return JsonResponse(data, safe=False)
+
+# User CRUD
+@csrf_exempt
+@require_http_methods(["GET"])
+def list_users(request):
+    users = User.objects.all()
+    data = [{"id": u.id, "username": u.username, "email": u.email or ""} for u in users]
+    return JsonResponse(data, safe=False)
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def create_user(request):
+    data = json.loads(request.body or "{}")
+    username = data.get("username")
+    password = data.get("password")
+    email = data.get("email", "")
+
+    if not username or not password:
+        return JsonResponse({"error": "Username and password are required"}, status=400)
+
+    user = User.objects.create(
+        username=username,
+        password=make_password(password),
+        email=email
+    )
+    return JsonResponse({"id": user.id, "username": user.username, "email": user.email}, status=201)
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def retrieve_user(request, user_id):
+    user = get_object_or_404(User, id=user_id)
+    return JsonResponse({"id": user.id, "username": user.username, "email": user.email or ""})
+
+@csrf_exempt
+@require_http_methods(["PUT"])
+def update_user(request, user_id):
+    user = get_object_or_404(User, id=user_id)
+    data = json.loads(request.body or "{}")
+    user.username = data.get("username", user.username)
+    if "email" in data:
+        user.email = data.get("email", user.email)
+    user.save()
+    return JsonResponse({"id": user.id, "username": user.username, "email": user.email})
+
+@csrf_exempt
+@require_http_methods(["DELETE"])
+def delete_user(request, user_id):
+    user = get_object_or_404(User, id=user_id)
+    user.delete()
+    return HttpResponse(status=204)
+
+# Tag CRUD
+@csrf_exempt
+@require_http_methods(["GET"])
+def list_tags(request):
+    tags = Tag.objects.all()
+    data = [{"name": t.name} for t in tags]
+    return JsonResponse(data, safe=False)
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def create_tag(request):
+    data = json.loads(request.body or "{}")
+    name = data.get("name")
+    if not name:
+        return JsonResponse({"error": "Tag name is required"}, status=400)
+    tag, created = Tag.objects.get_or_create(name=name)
+    return JsonResponse({"name": tag.name}, status=201 if created else 200)
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def tag_detail(request, tag_name):
+    tag = get_object_or_404(Tag, name=tag_name)
+    return JsonResponse({"name": tag.name})
+
+@csrf_exempt
+@require_http_methods(["PUT"])
+def update_tag(request, tag_name):
+    tag = get_object_or_404(Tag, name=tag_name)
+    data = json.loads(request.body or "{}")
+    new_name = data.get("name")
+    if not new_name:
+        return JsonResponse({"error": "New tag name is required"}, status=400)
+    tag.name = new_name
+    tag.save()
+    return JsonResponse({"name": tag.name})
+
+@csrf_exempt
+@require_http_methods(["DELETE"])
+def delete_tag(request, tag_name):
+    tag = get_object_or_404(Tag, name=tag_name)
+    tag.delete()
+    return HttpResponse(status=204)
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def retrieve_tag(request, tag_id):
+    tag = get_object_or_404(Tag, id=tag_id)
+    return JsonResponse({"id": tag.id, "name": tag.name})
