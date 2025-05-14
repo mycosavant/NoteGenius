@@ -14,7 +14,7 @@ function App() {
         <Route path="/edit" element={<EditPage />} />
         <Route path="/category" element={<CategoryPage />} />
         <Route path='/register' element={<RegisterPage/>} />
-        <Route path='/note' element={<NotePage/>} />
+        <Route path="/note/:id" element={<NotePage />} />
       </Routes>
     </BrowserRouter>
   );
