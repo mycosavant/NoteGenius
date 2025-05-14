@@ -44,7 +44,7 @@ function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
-            <button type="submit" name="register">Register</button>
+            <button type="submit" name="register" id='register-button'>Register</button>
             <p>
               Already have an account?{' '}
               <a onClick={(e) => { e.preventDefault(); navigate('/'); }}>
