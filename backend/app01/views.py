@@ -5,6 +5,9 @@ from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Q
 
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.models import User
+
 from .models import User, Note, Tag
 def index(request):
     return HttpResponse("Welcome to the Note API")
@@ -164,3 +167,70 @@ def search_notes(request):
         "created_at": n.created_at,
     } for n in notes]
     return JsonResponse(data, safe=False)
+
+
+@csrf_exempt
+def login_view(request):
+    """
+    使用者登入：
+    接收 POST 請求（JSON 格式）包含 username 和 password
+    驗證成功則登入並回傳成功訊息
+    失敗則回傳錯誤訊息
+    """
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        username = data.get('username')
+        password = data.get('password')
+
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            login(request, user)
+            return JsonResponse({'success': True, 'message': '登入成功'})
+        else:
+            return JsonResponse({'success': False, 'message': '帳號或密碼錯誤'}, status=401)
+
+    return JsonResponse({'message': '請使用 POST 請求'}, status=405)
+
+def logout_view(request):
+    """
+    使用者登出：
+    清除目前登入的 session
+    回傳成功訊息
+    """
+    logout(request)
+    return JsonResponse({'success': True, 'message': '已登出'})
+
+def check_login(request):
+    """
+    檢查使用者登入：
+    若已登入，回傳 True 與使用者帳號
+    若未登入，回傳 False
+    """
+    if request.user.is_authenticated:
+        return JsonResponse({'logged_in': True, 'username': request.user.username})
+    else:
+        return JsonResponse({'logged_in': False})
+    
+@csrf_exempt
+def register_view(request):
+    """
+    使用者註冊：
+    接收 POST 請求（JSON 格式）包含 username、password、email（可選）
+    檢查使用者是否已存在
+    建立帳號後自動登入並回傳成功訊息
+    """
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        username = data.get('username')
+        password = data.get('password')
+        email = data.get('email', '')
+
+        if User.objects.filter(username=username).exists():
+            return JsonResponse({'success': False, 'message': '帳號已存在'}, status=400)
+
+        # 建立使用者
+        user = User.objects.create_user(username=username, password=password, email=email)
+        login(request, user)  # 註冊後直接登入
+        return JsonResponse({'success': True, 'message': '註冊成功並已登入'})
+
+    return JsonResponse({'message': '請使用 POST 請求'}, status=405)

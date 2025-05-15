@@ -21,6 +21,4 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('app01/', include('app01.urls')),
     path('', views.index),
-    
-
 ]

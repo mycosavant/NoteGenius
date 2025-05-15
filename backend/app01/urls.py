@@ -1,6 +1,8 @@
 from django.urls import path
 from . import views
 
+from django.contrib.auth import views as auth_views
+
 urlpatterns = [
     # CRUD for Note
     path('notes/',                   views.list_notes,    name='list_notes'),
@@ -13,5 +15,12 @@ urlpatterns = [
     path('notes/tag/<str:tag_name>/',       views.notes_by_tag, name='notes_by_tag'),
     # 以 title 關鍵字模糊查筆記
     path('notes/search/',                   views.search_notes, name='search_notes'),
+
+
+    path('login/', views.login_view, name='login'),
+    path('logout/', views.logout_view, name='logout'),
+    path('check-login/', views.check_login, name='check_login'),
+    path('register/', views.register_view, name='register'),
+
  ]
 
