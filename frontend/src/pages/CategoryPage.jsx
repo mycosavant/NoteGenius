@@ -1,135 +1,240 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import './CategoryPage.css';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 function CategoryPage() {
   const navigate = useNavigate();
-  const [notes, setNotes] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [newCategory, setNewCategory] = useState('');
-  const [showCategoryInput, setShowCategoryInput] = useState(false);
-  const [selectingCategoryId, setSelectingCategoryId] = useState(null);
 
-  const handleLogout = () => {
-    navigate('/');
-  };
+  const [categories, setCategories] = useState([]);
+  const [notes, setNotes] = useState([]);
+  const [noteCounter, setNoteCounter] = useState(1);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [expandedCategory, setExpandedCategory] = useState(null);
 
   const handleAddNote = () => {
-    setNotes([...notes, { id: Date.now(), text: `Note ${notes.length + 1}`, category: '' }]);
+    const newNote = {
+      id: Date.now(),
+      title: `Note ${noteCounter}`,
+    };
+    setNotes([...notes, newNote]);
+    setNoteCounter(noteCounter + 1);
   };
 
-  const handleDeleteNote = (id) => {
-    setNotes(notes.filter(note => note.id !== id));
+  const handleDeleteNote = (noteId) => {
+    setNotes(notes.filter((n) => n.id !== noteId));
+  };
+
+  const handleDeleteCategorizedNote = (categoryName, noteId) => {
+    setCategories(
+      categories.map((cat) =>
+        cat.name === categoryName
+          ? {
+              ...cat,
+              notes: cat.notes.filter((note) => note.id !== noteId),
+            }
+          : cat
+      )
+    );
   };
 
   const handleAddCategory = () => {
-    if (newCategory.trim() !== '') {
-      setCategories([...categories, { id: Date.now(), name: newCategory, notes: [], isOpen: false }]);
-      setNewCategory('');
-      setShowCategoryInput(false);
+    if (newCategoryName.trim()) {
+      setCategories([...categories, { name: newCategoryName, notes: [] }]);
+      setNewCategoryName("");
     }
   };
 
-  const handleAssignNoteToCategory = (noteId, categoryId) => {
-    const updatedCategories = categories.map(category => {
-      if (category.id === categoryId) {
-        return { ...category, notes: [...category.notes, noteId] };
-      }
-      return category;
-    });
-    const updatedNotes = notes.map(note => note.id === noteId ? { ...note, category: categoryId } : note);
-    setCategories(updatedCategories);
-    setNotes(updatedNotes);
-    setSelectingCategoryId(null);
+  const handleAddNoteToCategory = (note, categoryName) => {
+    setNotes(notes.filter((n) => n.id !== note.id));
+    setCategories(
+      categories.map((cat) =>
+        cat.name === categoryName
+          ? { ...cat, notes: [...cat.notes, note] }
+          : cat
+      )
+    );
   };
 
-  const handleToggleCategory = (categoryId) => {
-    setCategories(categories.map(cat => cat.id === categoryId ? { ...cat, isOpen: !cat.isOpen } : cat));
+  const toggleExpand = (categoryName) => {
+    setExpandedCategory(expandedCategory === categoryName ? null : categoryName);
   };
 
-  const unassignedNotes = notes.filter(note => note.category === '');
+  const handleViewNote = (noteId) => {
+    navigate(`/note/${noteId}`);
+  };
+
+  const handleLogout = () => {
+    navigate("/login");
+  };
 
   return (
-    <div className="category-container">
-      <div className="header">
-        <h1>NoteGenius</h1>
-        <button className="logout-btn" onClick={handleLogout}>log out</button>
-      </div>
+    <div style={{ padding: "20px", position: "relative" }}>
+      <button
+        onClick={handleLogout}
+        style={{
+          position: "absolute",
+          top: "10px",
+          right: "10px",
+          backgroundColor: "transparent",
+          border: "none",
+          color: "#666",
+          cursor: "pointer",
+        }}
+      >
+        log out
+      </button>
 
-      <div className="action-buttons">
-        <button className="action-btn" onClick={handleAddNote}>新增筆記</button>
-        <button className="action-btn" onClick={() => setShowCategoryInput(!showCategoryInput)}>
-          分類管理
+      <h1>NoteGenius</h1>
+      <button
+        onClick={handleAddNote}
+        style={{
+          backgroundColor: "#1e3a8a",
+          color: "white",
+          padding: "10px 20px",
+          borderRadius: "6px",
+          border: "none",
+          marginBottom: "20px",
+        }}
+      >
+        新增筆記
+      </button>
+
+      <h3>未分類筆記</h3>
+      {notes.map((note) => (
+        <div key={note.id} style={{ marginBottom: "10px" }}>
+          <span>{note.title}</span>
+          <button
+            onClick={() => handleViewNote(note.id)}
+            style={{
+              marginLeft: "10px",
+              backgroundColor: "#1e3a8a",
+              color: "white",
+              border: "none",
+              padding: "6px 10px",
+              borderRadius: "4px",
+            }}
+          >
+            查看
+          </button>
+          <button
+            onClick={() => handleDeleteNote(note.id)}
+            style={{
+              marginLeft: "5px",
+              backgroundColor: "#dc2626",
+              color: "white",
+              border: "none",
+              padding: "6px 10px",
+              borderRadius: "4px",
+            }}
+          >
+            刪除
+          </button>
+        </div>
+      ))}
+
+      <h3 style={{ marginTop: "30px" }}>分類列表</h3>
+      <div style={{ display: "flex", alignItems: "center", marginBottom: "10px" }}>
+        <input
+          type="text"
+          placeholder="新增類別名稱"
+          value={newCategoryName}
+          onChange={(e) => setNewCategoryName(e.target.value)}
+          style={{
+            width: "50%",
+            padding: "8px",
+            borderRadius: "6px",
+            border: "1px solid #ccc",
+          }}
+        />
+        <button
+          onClick={handleAddCategory}
+          style={{
+            marginLeft: "10px",
+            width: "36px",
+            height: "36px",
+            fontSize: "18px",
+            padding: 0,
+            borderRadius: "50%",
+            backgroundColor: "#1e3a8a",
+            color: "white",
+            border: "none",
+          }}
+        >
+          +
         </button>
       </div>
 
-      {showCategoryInput && (
-        <div className="category-input">
-          <input
-            type="text"
-            placeholder="新增類別名稱"
-            value={newCategory}
-            onChange={(e) => setNewCategory(e.target.value)}
-          />
-          <button onClick={handleAddCategory}>新增</button>
-        </div>
-      )}
-
-      <div className="note-section">
-        <h2>未分類筆記</h2>
-        {unassignedNotes.length === 0 ? (
-          <p>目前沒有未分類筆記</p>
-        ) : (
-          unassignedNotes.map(note => (
-            <div key={note.id} className="note-item">
-              {note.text}
-              <button className="delete-btn" onClick={() => handleDeleteNote(note.id)}>刪除</button>
-            </div>
-          ))
-        )}
-      </div>
-
-      <div className="category-section">
-        <h2>分類列表</h2>
-        {categories.map(category => (
-          <div key={category.id} className="category-block">
-            <div className="category-header">
-              <span onClick={() => handleToggleCategory(category.id)} className="category-name">
-                {category.name}
-              </span>
-              <button className="assign-btn" onClick={() => setSelectingCategoryId(category.id)}>➕</button>
-            </div>
-
-            {selectingCategoryId === category.id && (
-              <div className="assign-list">
-                {unassignedNotes.map(note => (
-                  <div key={note.id} className="assign-note">
-                    <span>{note.text}</span>
-                    <button onClick={() => handleAssignNoteToCategory(note.id, category.id)}>加入</button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {category.isOpen && (
-              <div className="note-in-category">
-                {category.notes.length === 0 ? (
-                  <p>（目前沒有筆記）</p>
-                ) : (
-                  category.notes.map(noteId => {
-                    const note = notes.find(n => n.id === noteId);
-                    return (
-                      <div key={noteId} className="note-item-small">
-                        {note ? note.text : '找不到筆記'}
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            )}
+      {categories.map((category) => (
+        <div key={category.name} style={{ marginBottom: "10px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between" }}>
+            <strong>{category.name}</strong>
+            <button onClick={() => toggleExpand(category.name)}>+</button>
           </div>
-        ))}
-      </div>
+          {expandedCategory === category.name && (
+            <div style={{ paddingLeft: "10px" }}>
+              <h5>可加入的筆記：</h5>
+              {notes.length === 0 ? (
+                <div>目前無可加入的筆記</div>
+              ) : (
+                notes.map((note) => (
+                  <div key={note.id} style={{ marginBottom: "5px" }}>
+                    {note.title}
+                    <button
+                      onClick={() => handleAddNoteToCategory(note, category.name)}
+                      style={{
+                        marginLeft: "8px",
+                        padding: "4px 8px",
+                        backgroundColor: "#1e3a8a",
+                        color: "white",
+                        border: "none",
+                        borderRadius: "4px",
+                      }}
+                    >
+                      加入
+                    </button>
+                  </div>
+                ))
+              )}
+
+              {category.notes.length > 0 && (
+                <>
+                  <h5>已分類筆記：</h5>
+                  {category.notes.map((note) => (
+                    <div key={note.id} style={{ marginLeft: "10px", marginBottom: "5px", color: "#666" }}>
+                      {note.title}
+                      <button
+                        onClick={() => handleViewNote(note.id)}
+                        style={{
+                          marginLeft: "10px",
+                          backgroundColor: "#1e3a8a",
+                          color: "white",
+                          border: "none",
+                          padding: "4px 8px",
+                          borderRadius: "4px",
+                        }}
+                      >
+                        查看
+                      </button>
+                      <button
+                        onClick={() => handleDeleteCategorizedNote(category.name, note.id)}
+                        style={{
+                          marginLeft: "5px",
+                          backgroundColor: "#dc2626",
+                          color: "white",
+                          border: "none",
+                          padding: "4px 8px",
+                          borderRadius: "4px",
+                        }}
+                      >
+                        刪除
+                      </button>
+                    </div>
+                  ))}
+                </>
+              )}
+            </div>
+          )}
+        </div>
+      ))}
     </div>
   );
 }

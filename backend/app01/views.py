@@ -1,6 +1,9 @@
-import json
-from django.http import JsonResponse, HttpResponse
+# your_app_name/views.py
+from rest_framework import viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
+<<<<<<< HEAD
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Q
@@ -8,123 +11,34 @@ from django.db.models import Q
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 
+=======
+>>>>>>> main
 from .models import User, Note, Tag
-def index(request):
-    return HttpResponse("Welcome to the Note API")
-@csrf_exempt
-@require_http_methods(["POST"])
-def create_note(request):
-    """
-    建立新筆記
-    JSON BODY:
-      {
-        "user_id": 1,
-        "title": "標題",
-        "content": "內容",
-        "parent_id": 2,         # 可選
-        "tags": ["tag1","tag2"] # 可選
-      }
-    """
-    data = json.loads(request.body or "{}")
-    user = get_object_or_404(User, id=data.get("user_id"))
-    note = Note.objects.create(
-        user=user,
-        title=data.get("title", ""),
-        content=data.get("content", ""),
-        parent_id=data.get("parent_id")
-    )
-    for name in data.get("tags", []):
-        tag, _ = Tag.objects.get_or_create(name=name)
-        note.tags.add(tag)
-    return JsonResponse({
-        "id": note.id,
-        "user_id": note.user_id,
-        "title": note.title,
-        "content": note.content,
-        "parent_id": note.parent_id,
-        "tags": [t.name for t in note.tags.all()],
-        "created_at": note.created_at,
-    }, status=201)
+from .serializers import UserSerializer, NoteSerializer, TagSerializer
 
-@csrf_exempt
-@require_http_methods(["GET"])
-def list_notes(request):
-    """
-    列出所有筆記
-    """
-    qs = Note.objects.all().order_by("-created_at")
-    data = [{
-        "id": n.id,
-        "user_id": n.user_id,
-        "title": n.title,
-        "content": n.content,
-        "parent_id": n.parent_id,
-        "tags": [t.name for t in n.tags.all()],
-        "created_at": n.created_at,
-    } for n in qs]
-    return JsonResponse(data, safe=False)
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
 
-@csrf_exempt
-@require_http_methods(["GET"])
-def retrieve_note(request, note_id):
-    """
-    讀取單筆筆記
-    """
-    n = get_object_or_404(Note, id=note_id)
-    return JsonResponse({
-        "id": n.id,
-        "user_id": n.user_id,
-        "title": n.title,
-        "content": n.content,
-        "parent_id": n.parent_id,
-        "tags": [t.name for t in n.tags.all()],
-        "created_at": n.created_at,
-    })
+class NoteViewSet(viewsets.ModelViewSet):
+    queryset = Note.objects.all().order_by('-created_at')
+    serializer_class = NoteSerializer
 
-@csrf_exempt
-@require_http_methods(["PUT"])
-def update_note(request, note_id):
-    """
-    更新筆記（含標籤）
-    JSON BODY 可只傳想改的欄位：
-      {
-        "title": "...",
-        "content": "...",
-        "parent_id": 3,
-        "tags": ["new","list"]
-      }
-    """
-    n = get_object_or_404(Note, id=note_id)
-    data = json.loads(request.body or "{}")
-    n.title     = data.get("title", n.title)
-    n.content   = data.get("content", n.content)
-    n.parent_id = data.get("parent_id", n.parent_id)
-    n.save()
-    if "tags" in data:
-        n.tags.clear()
-        for name in data["tags"]:
-            tag, _ = Tag.objects.get_or_create(name=name)
-            n.tags.add(tag)
-    return JsonResponse({
-        "id": n.id,
-        "user_id": n.user_id,
-        "title": n.title,
-        "content": n.content,
-        "parent_id": n.parent_id,
-        "tags": [t.name for t in n.tags.all()],
-        "created_at": n.created_at,
-    })
+    @action(detail=False, methods=['get'], url_path='by-tag/(?P<tag_name>[^/.]+)')
+    def notes_by_tag(self, request, tag_name=None):
+        tag = get_object_or_404(Tag, name=tag_name)
+        notes = self.queryset.filter(tags=tag)
+        serializer = self.get_serializer(notes, many=True)
+        return Response(serializer.data)
 
-@csrf_exempt
-@require_http_methods(["DELETE"])
-def delete_note(request, note_id):
-    """
-    刪除筆記
-    """
-    n = get_object_or_404(Note, id=note_id)
-    n.delete()
-    return HttpResponse(status=204)
+    @action(detail=False, methods=['get'], url_path='search')
+    def search(self, request):
+        query = request.query_params.get('title', '')
+        notes = self.queryset.filter(title__icontains=query)
+        serializer = self.get_serializer(notes, many=True)
+        return Response(serializer.data)
 
+<<<<<<< HEAD
 
 @csrf_exempt
 @require_http_methods(["GET"])
@@ -234,3 +148,8 @@ def register_view(request):
         return JsonResponse({'success': True, 'message': '註冊成功並已登入'})
 
     return JsonResponse({'message': '請使用 POST 請求'}, status=405)
+=======
+class TagViewSet(viewsets.ModelViewSet):
+    queryset = Tag.objects.all()
+    serializer_class = TagSerializer
+>>>>>>> main
