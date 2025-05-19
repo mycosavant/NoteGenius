@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 function CategoryPage() {
@@ -9,6 +9,17 @@ function CategoryPage() {
   const [noteCounter, setNoteCounter] = useState(1);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [expandedCategory, setExpandedCategory] = useState(null);
+
+useEffect(() => {
+  fetch("http://localhost:8000/notes/")
+    .then((res) => res.json())
+    .then((data) => {
+      console.log("抓到的資料", data);
+      setNotes(data);
+    })
+    .catch((err) => console.error("API 錯誤", err));
+}, []);
+
 
   const handleAddNote = () => {
     const newNote = {
