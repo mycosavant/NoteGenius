@@ -1,5 +1,5 @@
 // src/components/note/NotesList.jsx
-import React, { useState } from 'react';
+import React from 'react';
 import './NotesList.css';
 
 export function NotesList({
@@ -7,144 +7,101 @@ export function NotesList({
   selectedNote,
   onSelectNote,
   onDeleteNote,
-  categories,
+  categories, // 傳進來還叫 categories，但實際上就是標籤
   selectedCategory,
   onSelectCategory,
   onCreateCategory,
 }) {
-  const [newCategory, setNewCategory] = useState('');
-  const [categoriesOpen, setCategoriesOpen] = useState(true);
-  const [showCategoryDialog, setShowCategoryDialog] = useState(false);
-
-  // 根據選定的分類過濾筆記
-  const filteredNotes = Object.entries(notes).filter(([_, note]) => {
-    if (!selectedCategory) return true;
-    return note.category === selectedCategory;
-  });
-
-  const handleCreateCategory = () => {
-    if (newCategory) {
-      onCreateCategory(newCategory);
-      setNewCategory('');
-      setShowCategoryDialog(false);
-    }
-  };
+  // notes還是原本結構，categories 其實就是 tags
+  const safeNotes = Array.isArray(notes) ? notes : Object.entries(notes || {});
 
   return (
     <div className="notes-list">
-      <div className="categories-section">
-        {/* 分類區域 */}
-        <div className="section-header" onClick={() => setCategoriesOpen(!categoriesOpen)}>
-          <span className="section-title">
-            <span className={`chevron ${categoriesOpen ? 'down' : 'right'}`}></span>
-            分類
-          </span>
-          <button 
-            className="add-button" 
-            onClick={(e) => {
-              e.stopPropagation();
-              setShowCategoryDialog(true);
-            }}
-          >
-            +
-          </button>
-        </div>
-        
-        {categoriesOpen && (
-          <div className="categories-list">
-            <div
-              className={`category-item ${!selectedCategory ? 'active' : ''}`}
-              onClick={() => onSelectCategory(null)}
-            >
-              <span>所有筆記</span>
-            </div>
-            {categories.map((category) => (
-              <div
-                key={category}
-                className={`category-item ${selectedCategory === category ? 'active' : ''}`}
-                onClick={() => onSelectCategory(category)}
-              >
-                <span>{category}</span>
-                <span className="note-count">
-                  {Object.values(notes).filter((note) => note.category === category).length}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
+      {/* 分類標題→標籤 */}
+      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
+        <span style={{ fontWeight: 'bold', marginRight: 6 }}>標籤</span>
+        <button
+          style={{
+            background: '#fff',
+            border: '1px solid #bbb',
+            borderRadius: 4,
+            padding: '0 8px',
+            cursor: 'pointer',
+            marginLeft: 'auto'
+          }}
+          onClick={() => {
+            const name = prompt('請輸入新標籤名稱');
+            if (name) onCreateCategory?.(name);
+          }}
+        >+</button>
       </div>
-
-      <div className="notes-section">
-        <div className="section-header">
-          <span className="section-title">筆記列表</span>
+      <div style={{ marginBottom: 10 }}>
+        <div
+          className={`category-item${!selectedCategory ? ' selected' : ''}`}
+          onClick={() => onSelectCategory?.(null)}
+          style={{ cursor: 'pointer', color: !selectedCategory ? '#1677ff' : '#222', marginBottom: 6 }}
+        >
+          所有筆記
         </div>
-
-        <div className="notes-grid">
-          {filteredNotes.length === 0 ? (
-            <div className="no-notes">
-              {selectedCategory ? `${selectedCategory} 分類中沒有筆記` : '沒有筆記，請創建一個新筆記'}
-            </div>
-          ) : (
-            filteredNotes.map(([id, note]) => (
-              <div
-                key={id}
-                className={`note-item ${selectedNote === id ? 'active' : ''}`}
-                onClick={() => onSelectNote(id)}
-              >
-                <div className="note-content">
-                  <div className="note-title">{note.title}</div>
-                  {note.category && <div className="note-category">{note.category}</div>}
-                  {note.tags && note.tags.length > 0 && (
-                    <div className="note-tags">
-                      {note.tags.slice(0, 2).map((tag) => (
-                        <span key={tag} className="note-tag">
-                          {tag}
-                        </span>
-                      ))}
-                      {note.tags.length > 2 && (
-                        <span className="note-tag">+{note.tags.length - 2}</span>
-                      )}
-                    </div>
-                  )}
-                </div>
-                <button
-                  className="delete-button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (window.confirm('確定要刪除這個筆記嗎？')) {
-                      onDeleteNote(id);
-                    }
+        {categories && categories.map((cat) => (
+          <div
+            key={cat}
+            className={`category-item${selectedCategory === cat ? ' selected' : ''}`}
+            onClick={() => onSelectCategory?.(cat)}
+            style={{ cursor: 'pointer', color: selectedCategory === cat ? '#1677ff' : '#444', marginBottom: 6, paddingLeft: 8 }}
+          >
+            {cat}
+          </div>
+        ))}
+      </div>
+      {/* 筆記清單 */}
+      <div style={{ borderTop: '1px solid #eee', paddingTop: 10 }}>
+        <div style={{ fontWeight: 600, marginBottom: 10 }}>筆記列表</div>
+        {safeNotes.length === 0 ? (
+          <div style={{ color: '#aaa', textAlign: 'center', marginTop: 30 }}>
+            沒有筆記，請創建一個新筆記
+          </div>
+        ) : (
+          <ul className="notes-ul">
+            {safeNotes
+              .filter(([id, note]) =>
+                !selectedCategory || note.tag === selectedCategory)
+              .map(([id, note]) => (
+                <li
+                  key={id}
+                  className={`note-item${selectedNote === id ? ' selected' : ''}`}
+                  onClick={() => onSelectNote?.(id)}
+                  style={{
+                    padding: '6px 8px',
+                    borderRadius: 6,
+                    marginBottom: 6,
+                    background: selectedNote === id ? '#e6f4ff' : undefined,
+                    cursor: 'pointer',
+                    display: 'flex', alignItems: 'center'
                   }}
                 >
-                  ×
-                </button>
-              </div>
-            ))
-          )}
-        </div>
+                  <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {note.title || '（未命名）'}
+                  </span>
+                  <button
+                    style={{
+                      background: '#fff',
+                      color: '#ff4d4f',
+                      border: '1px solid #ddd',
+                      borderRadius: 4,
+                      marginLeft: 8,
+                      cursor: 'pointer'
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeleteNote?.(id);
+                    }}
+                  >刪除</button>
+                </li>
+              ))}
+          </ul>
+        )}
       </div>
-
-      {/* 新增分類對話框 */}
-      {showCategoryDialog && (
-        <div className="dialog-overlay">
-          <div className="dialog">
-            <div className="dialog-header">新增分類</div>
-            <div className="dialog-content">
-              <label htmlFor="category-name">分類名稱</label>
-              <input
-                id="category-name"
-                value={newCategory}
-                onChange={(e) => setNewCategory(e.target.value)}
-                placeholder="輸入分類名稱"
-              />
-            </div>
-            <div className="dialog-footer">
-              <button onClick={() => setShowCategoryDialog(false)}>取消</button>
-              <button onClick={handleCreateCategory}>創建</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
