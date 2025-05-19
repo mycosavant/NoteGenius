@@ -6,6 +6,9 @@ from django.shortcuts import get_object_or_404
 from .models import User, Note, Tag
 from .serializers import UserSerializer, NoteSerializer, TagSerializer
 
+from .utils import call_gemini#gemini_api
+
+
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -27,6 +30,27 @@ class NoteViewSet(viewsets.ModelViewSet):
         notes = self.queryset.filter(title__icontains=query)
         serializer = self.get_serializer(notes, many=True)
         return Response(serializer.data)
+    #新增：Gemini 改寫功能
+    @action(detail=True, methods=['post'], url_path='rewrite')
+    def rewrite(self, request, pk=None):
+        print(" 進入 rewrite()")
+        note = self.get_object()
+        print("原始內容：", note.content)
+
+        prompt = f"請幫我改寫以下筆記內容，使其更清楚流暢：\n{note.content}"
+
+        try:
+            rewritten = call_gemini(prompt)
+        except Exception as e:
+            print(" Gemini 呼叫失敗：", e)
+            return Response({"error": str(e)}, status=500)
+
+        return Response({
+        "note_id": note.id,
+        "original": note.content,
+        "rewritten": rewritten
+    })
+
 
 class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
