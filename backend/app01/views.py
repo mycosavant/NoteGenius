@@ -50,7 +50,30 @@ class NoteViewSet(viewsets.ModelViewSet):
         "original": note.content,
         "rewritten": rewritten
     })
+    @action(detail=True, methods=['post'], url_path='summarize')
+    def summarize(self, request, pk=None):
+        note = self.get_object()
+        prompt = f"請將以下內容進行摘要（用中文寫出1~3句總結）：\n{note.content}"
+        result = call_gemini(prompt)
+        return Response({
+            "note_id": note.id,
+            "summary": result
+        })
 
+    @action(detail=True, methods=['post'], url_path='translate')
+    def translate(self, request, pk=None):
+        note = self.get_object()
+        lang = request.data.get("lang", "en")  # "en" = 翻成英文, "zh" = 翻成中文
+        if lang == "zh":
+            prompt = f"請將以下英文翻譯為中文：\n{note.content}"
+        else:
+            prompt = f"Please translate the following Chinese text into English:\n{note.content}"
+        result = call_gemini(prompt)
+        return Response({
+            "note_id": note.id,
+            "translated_to": "Chinese" if lang == "zh" else "English",
+            "result": result
+        })
 
 class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
