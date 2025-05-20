@@ -13,60 +13,97 @@ export default function NotePage() {
   const [selectedNote, setSelectedNote] = useState(noteId || null);
   const [notes, setNotes] = useState({});
   const [aiChatVisible, setAiChatVisible] = useState(true);
-  const [tags, setTags] = useState([]);  // 這裡就是「標籤」狀態
+  const [tags, setTags] = useState([]);
   const [selectedTag, setSelectedTag] = useState(null);
 
-  // 1. 讀 localStorage
   useEffect(() => {
-    const savedNotes = localStorage.getItem('notes');
-    if (savedNotes) setNotes(JSON.parse(savedNotes));
     const savedAiChatVisible = localStorage.getItem('aiChatVisible');
     if (savedAiChatVisible !== null) setAiChatVisible(JSON.parse(savedAiChatVisible));
     const savedTags = localStorage.getItem('tags');
     if (savedTags) setTags(JSON.parse(savedTags));
+
+    // 🚀 取得所有 notes from 後端
+    fetch("http://localhost:8000/api/notes/")
+      .then(res => res.json())
+      .then(data => {
+        const notesMap = {};
+        data.forEach(note => { notesMap[note.id] = note });
+        setNotes(notesMap);
+      })
+      .catch(err => console.error("載入 notes 失敗：", err));
   }, []);
 
-  // 2. 根據 noteId URL 參數自動選中
   useEffect(() => {
     if (noteId) setSelectedNote(noteId);
   }, [noteId]);
 
-  // 3. 儲存回 localStorage
-  useEffect(() => {
-    localStorage.setItem('notes', JSON.stringify(notes));
-  }, [notes]);
   useEffect(() => {
     localStorage.setItem('aiChatVisible', JSON.stringify(aiChatVisible));
-  }, [aiChatVisible]);
-  useEffect(() => {
     localStorage.setItem('tags', JSON.stringify(tags));
-  }, [tags]);
+  }, [aiChatVisible, tags]);
 
-  // 4. 新增/刪除/編輯筆記
-  const handleSaveNote = (id, title, content, tag) => {
-    setNotes(prev => ({
-      ...prev,
-      [id]: { ...prev[id], title, content, tag } // tag 取代原本的 category
-    }));
+  const handleSaveNote = async (id, title, content, tag) => {
+    try {
+      const response = await fetch(`http://localhost:8000/api/notes/${id}/`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, content, tag })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("更新筆記失敗：", errorData);
+        return;
+      }
+
+      const updatedNote = await response.json();
+      setNotes(prev => ({ ...prev, [id]: updatedNote }));
+    } catch (err) {
+      console.error("儲存筆記時發生錯誤：", err);
+    }
   };
 
-  const handleCreateNote = () => {
-    const id = `note-${Date.now()}`;
-    setNotes(prev => ({
-      ...prev,
-      [id]: { title: '新筆記', content: '', tag: '' }
-    }));
-    setSelectedNote(id);
+  const handleCreateNote = async () => {
+    try {
+      const response = await fetch("http://localhost:8000/api/notes/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: "新筆記",
+          content: "",
+          tag: ""
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error("建立筆記失敗：", errorData);
+        return;
+      }
+
+      const newNote = await response.json();
+      setNotes(prev => ({ ...prev, [newNote.id]: newNote }));
+      setSelectedNote(newNote.id);
+    } catch (err) {
+      console.error("建立筆記時發生錯誤：", err);
+    }
   };
 
-  const handleDeleteNote = (id) => {
-    const newNotes = { ...notes };
-    delete newNotes[id];
-    setNotes(newNotes);
-    if (selectedNote === id) setSelectedNote(null);
+  const handleDeleteNote = async (id) => {
+    try {
+      await fetch(`http://localhost:8000/api/notes/${id}/`, {
+        method: "DELETE"
+      });
+
+      const newNotes = { ...notes };
+      delete newNotes[id];
+      setNotes(newNotes);
+      if (selectedNote === id) setSelectedNote(null);
+    } catch (err) {
+      console.error("刪除筆記時發生錯誤：", err);
+    }
   };
 
-  // 5. 新增標籤
   const handleCreateTag = (tagName) => {
     if (tagName && !tags.includes(tagName)) {
       setTags([...tags, tagName]);
@@ -75,7 +112,6 @@ export default function NotePage() {
 
   return (
     <div className="note-page">
-      {/* 側邊欄切換按鈕 */}
       <div className="sidebar-toggle">
         <Button onClick={() => setSidebarOpen(!sidebarOpen)}>
           {sidebarOpen ? '隱藏側邊欄' : '顯示側邊欄'}
@@ -83,7 +119,6 @@ export default function NotePage() {
       </div>
 
       <div className="note-container">
-        {/* 側邊欄 */}
         {sidebarOpen && (
           <div className="sidebar">
             <div className="sidebar-header">
@@ -95,7 +130,7 @@ export default function NotePage() {
               selectedNote={selectedNote}
               onSelectNote={setSelectedNote}
               onDeleteNote={handleDeleteNote}
-              categories={tags} // 這裡傳進去就是標籤！
+              categories={tags}
               selectedCategory={selectedTag}
               onSelectCategory={setSelectedTag}
               onCreateCategory={handleCreateTag}
@@ -103,7 +138,6 @@ export default function NotePage() {
           </div>
         )}
 
-        {/* 主要內容 */}
         <div className="main-content">
           <div className={`editor-area ${!aiChatVisible ? 'full-width' : ''}`}>
             {selectedNote && notes[selectedNote] ? (
@@ -112,8 +146,8 @@ export default function NotePage() {
                 noteId={selectedNote}
                 initialTitle={notes[selectedNote]?.title}
                 initialContent={notes[selectedNote]?.content}
-                initialTag={notes[selectedNote]?.tag}    // 用 tag 不是 category
-                tags={tags}                               // 標籤列表
+                initialTag={notes[selectedNote]?.tag}
+                tags={tags}
                 onSave={handleSaveNote}
                 onCreateTag={handleCreateTag}
               />
@@ -123,9 +157,13 @@ export default function NotePage() {
               </div>
             )}
           </div>
-          {aiChatVisible && (
+
+          {aiChatVisible && selectedNote && notes[selectedNote] && (
             <div className="ai-chat-area">
-              <AiChat onToggleVisibility={() => setAiChatVisible(!aiChatVisible)} />
+              <AiChat
+                noteId={notes[selectedNote].id}  // ✅ 用真實後端 ID 傳入
+                onToggleVisibility={() => setAiChatVisible(!aiChatVisible)}
+              />
             </div>
           )}
         </div>
