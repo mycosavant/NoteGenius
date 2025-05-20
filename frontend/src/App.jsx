@@ -5,6 +5,8 @@ import EditPage from './pages/EditPage';
 import CategoryPage from './pages/CategoryPage';
 import RegisterPage from './pages/RegisterPage';
 import NotePage from './edit/pages/NotePage';
+import UserQueryPage from './pages/UserQueryPage';
+
 
 function App() {
   return (
@@ -14,7 +16,10 @@ function App() {
         <Route path="/edit" element={<EditPage />} />
         <Route path="/category" element={<CategoryPage />} />
         <Route path='/register' element={<RegisterPage/>} />
-        <Route path="/note/:id" element={<NotePage />} />
+        <Route path="/note/:noteId" element={<NotePage />} />
+        <Route path="/user-query" element={<UserQueryPage />} />
+
+
       </Routes>
     </BrowserRouter>
   );
