@@ -1,5 +1,6 @@
 // src/pages/NotePage.jsx
 import React, { useState, useEffect } from 'react';
+import { useParams } from "react-router-dom";
 import NoteEditor from '../components/note/NoteEditor';
 import AiChat from '../components/note/AiChat';
 import { NotesList } from '../components/note/NotesList';
@@ -7,63 +8,53 @@ import { Button } from '../components/ui/Button';
 import '../styles/note.css';
 
 export default function NotePage() {
+  const { noteId } = useParams();
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [selectedNote, setSelectedNote] = useState(null);
+  const [selectedNote, setSelectedNote] = useState(noteId || null);
   const [notes, setNotes] = useState({});
   const [aiChatVisible, setAiChatVisible] = useState(true);
-  const [categories, setCategories] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [tags, setTags] = useState([]);  // 這裡就是「標籤」狀態
+  const [selectedTag, setSelectedTag] = useState(null);
 
-  // 從本地存儲加載筆記和設置
+  // 1. 讀 localStorage
   useEffect(() => {
     const savedNotes = localStorage.getItem('notes');
-    if (savedNotes) {
-      setNotes(JSON.parse(savedNotes));
-    }
-
+    if (savedNotes) setNotes(JSON.parse(savedNotes));
     const savedAiChatVisible = localStorage.getItem('aiChatVisible');
-    if (savedAiChatVisible !== null) {
-      setAiChatVisible(JSON.parse(savedAiChatVisible));
-    }
-
-    const savedCategories = localStorage.getItem('categories');
-    if (savedCategories) {
-      setCategories(JSON.parse(savedCategories));
-    }
+    if (savedAiChatVisible !== null) setAiChatVisible(JSON.parse(savedAiChatVisible));
+    const savedTags = localStorage.getItem('tags');
+    if (savedTags) setTags(JSON.parse(savedTags));
   }, []);
 
-  // 保存筆記到本地存儲
+  // 2. 根據 noteId URL 參數自動選中
+  useEffect(() => {
+    if (noteId) setSelectedNote(noteId);
+  }, [noteId]);
+
+  // 3. 儲存回 localStorage
   useEffect(() => {
     localStorage.setItem('notes', JSON.stringify(notes));
   }, [notes]);
-
-  // 保存AI助手可見性狀態
   useEffect(() => {
     localStorage.setItem('aiChatVisible', JSON.stringify(aiChatVisible));
   }, [aiChatVisible]);
-
-  // 保存分類到本地存儲
   useEffect(() => {
-    localStorage.setItem('categories', JSON.stringify(categories));
-  }, [categories]);
+    localStorage.setItem('tags', JSON.stringify(tags));
+  }, [tags]);
 
-  const handleSaveNote = (id, title, content, category, tags) => {
-    setNotes((prev) => ({
+  // 4. 新增/刪除/編輯筆記
+  const handleSaveNote = (id, title, content, tag) => {
+    setNotes(prev => ({
       ...prev,
-      [id]: {
-        title,
-        content,
-        category,
-        tags,
-      },
+      [id]: { ...prev[id], title, content, tag } // tag 取代原本的 category
     }));
   };
 
   const handleCreateNote = () => {
     const id = `note-${Date.now()}`;
-    setNotes((prev) => ({
+    setNotes(prev => ({
       ...prev,
-      [id]: { title: '新筆記', content: '' },
+      [id]: { title: '新筆記', content: '', tag: '' }
     }));
     setSelectedNote(id);
   };
@@ -72,14 +63,13 @@ export default function NotePage() {
     const newNotes = { ...notes };
     delete newNotes[id];
     setNotes(newNotes);
-    if (selectedNote === id) {
-      setSelectedNote(null);
-    }
+    if (selectedNote === id) setSelectedNote(null);
   };
 
-  const handleCreateCategory = (categoryName) => {
-    if (categoryName && !categories.includes(categoryName)) {
-      setCategories([...categories, categoryName]);
+  // 5. 新增標籤
+  const handleCreateTag = (tagName) => {
+    if (tagName && !tags.includes(tagName)) {
+      setTags([...tags, tagName]);
     }
   };
 
@@ -105,32 +95,34 @@ export default function NotePage() {
               selectedNote={selectedNote}
               onSelectNote={setSelectedNote}
               onDeleteNote={handleDeleteNote}
-              categories={categories}
-              selectedCategory={selectedCategory}
-              onSelectCategory={setSelectedCategory}
-              onCreateCategory={handleCreateCategory}
+              categories={tags} // 這裡傳進去就是標籤！
+              selectedCategory={selectedTag}
+              onSelectCategory={setSelectedTag}
+              onCreateCategory={handleCreateTag}
             />
           </div>
         )}
 
-        {/* 主要內容區域 */}
+        {/* 主要內容 */}
         <div className="main-content">
-          {/* 筆記編輯區域 */}
           <div className={`editor-area ${!aiChatVisible ? 'full-width' : ''}`}>
-            <NoteEditor
-              key={selectedNote}
-              noteId={selectedNote}
-              initialTitle={selectedNote ? notes[selectedNote]?.title : ''}
-              initialContent={selectedNote ? notes[selectedNote]?.content : ''}
-              initialCategory={selectedNote ? notes[selectedNote]?.category : undefined}
-              initialTags={selectedNote ? notes[selectedNote]?.tags : []}
-              categories={categories}
-              onSave={handleSaveNote}
-              onCreateCategory={handleCreateCategory}
-            />
+            {selectedNote && notes[selectedNote] ? (
+              <NoteEditor
+                key={selectedNote}
+                noteId={selectedNote}
+                initialTitle={notes[selectedNote]?.title}
+                initialContent={notes[selectedNote]?.content}
+                initialTag={notes[selectedNote]?.tag}    // 用 tag 不是 category
+                tags={tags}                               // 標籤列表
+                onSave={handleSaveNote}
+                onCreateTag={handleCreateTag}
+              />
+            ) : (
+              <div style={{ textAlign: 'center', marginTop: 40, color: '#666' }}>
+                請點選左側筆記或新增一個新筆記
+              </div>
+            )}
           </div>
-
-          {/* AI 聊天區域 */}
           {aiChatVisible && (
             <div className="ai-chat-area">
               <AiChat onToggleVisibility={() => setAiChatVisible(!aiChatVisible)} />
@@ -139,12 +131,8 @@ export default function NotePage() {
         </div>
       </div>
 
-      {/* 顯示AI助手按鈕 */}
       {!aiChatVisible && (
-        <Button
-          className="show-ai-button"
-          onClick={() => setAiChatVisible(true)}
-        >
+        <Button className="show-ai-button" onClick={() => setAiChatVisible(true)}>
           顯示AI助手
         </Button>
       )}
