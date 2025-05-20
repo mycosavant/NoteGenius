@@ -16,6 +16,9 @@ from django.contrib.auth.models import User
 from .models import User, Note, Tag
 from .serializers import UserSerializer, NoteSerializer, TagSerializer
 
+from .utils import call_gemini#gemini_api
+
+
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -37,6 +40,50 @@ class NoteViewSet(viewsets.ModelViewSet):
         notes = self.queryset.filter(title__icontains=query)
         serializer = self.get_serializer(notes, many=True)
         return Response(serializer.data)
+    #新增：Gemini 改寫功能
+    @action(detail=True, methods=['post'], url_path='rewrite')
+    def rewrite(self, request, pk=None):
+        print(" 進入 rewrite()")
+        note = self.get_object()
+        print("原始內容：", note.content)
+
+        prompt = f"請幫我改寫以下筆記內容，使其更清楚流暢：\n{note.content}"
+
+        try:
+            rewritten = call_gemini(prompt)
+        except Exception as e:
+            print(" Gemini 呼叫失敗：", e)
+            return Response({"error": str(e)}, status=500)
+
+        return Response({
+        "note_id": note.id,
+        "original": note.content,
+        "rewritten": rewritten
+    })
+    @action(detail=True, methods=['post'], url_path='summarize')
+    def summarize(self, request, pk=None):
+        note = self.get_object()
+        prompt = f"請將以下內容進行摘要（用中文寫出1~3句總結）：\n{note.content}"
+        result = call_gemini(prompt)
+        return Response({
+            "note_id": note.id,
+            "summary": result
+        })
+
+    @action(detail=True, methods=['post'], url_path='translate')
+    def translate(self, request, pk=None):
+        note = self.get_object()
+        lang = request.data.get("lang", "en")  # "en" = 翻成英文, "zh" = 翻成中文
+        if lang == "zh":
+            prompt = f"請將以下英文翻譯為中文：\n{note.content}"
+        else:
+            prompt = f"Please translate the following Chinese text into English:\n{note.content}"
+        result = call_gemini(prompt)
+        return Response({
+            "note_id": note.id,
+            "translated_to": "Chinese" if lang == "zh" else "English",
+            "result": result
+        })
 
 <<<<<<< HEAD
 
