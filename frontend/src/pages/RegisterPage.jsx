@@ -11,12 +11,12 @@ function RegisterPage() {
   const handleRegister = (e) => {
     e.preventDefault();
     if (account.trim() === "" || password.trim() === "" || username.trim() === "") {
-      alert("請輸入帳號、密碼和姓名");
+      alert("Please enter account, password and username");
       return;
     }
-    // 儲存到 localStorage (demo 用)
+    // Save to localStorage (for demo)
     localStorage.setItem("user", JSON.stringify({ account, password, username }));
-    // 註冊完自動跳轉
+    // After register, go to category page
     navigate("/category");
   };
 
@@ -30,21 +30,21 @@ function RegisterPage() {
             <input
               type="text"
               name="account"
-              placeholder="account"
+              placeholder="Account"
               value={account}
               onChange={(e) => setAccount(e.target.value)}
             />
             <input
               type="text"
               name="username"
-              placeholder="username"
+              placeholder="Username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
             />
             <input
               type="password"
               name="password"
-              placeholder="password"
+              placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
@@ -59,6 +59,19 @@ function RegisterPage() {
                 }}
               >
                 Login
+              </a>
+            </p>
+            <p>
+              Want to query your account?{" "}
+              <a
+                href="#"
+                onClick={e => {
+                  e.preventDefault();
+                  navigate("/user-query");
+                }}
+                style={{ color: "#7494ec", textDecoration: "underline" }}
+              >
+                Inquiry
               </a>
             </p>
           </form>

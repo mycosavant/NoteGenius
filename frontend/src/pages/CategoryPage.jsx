@@ -77,9 +77,9 @@ function CategoryPage() {
     navigate(`/note/${noteId}`);
   };
 
-  // 登出
+  // 登出（只修這裡，點 log out 跳回首頁！其餘完全不變）
   const handleLogout = () => {
-    navigate("/login");
+    navigate("/");
   };
 
   // ======= 這裡才是 return ======
