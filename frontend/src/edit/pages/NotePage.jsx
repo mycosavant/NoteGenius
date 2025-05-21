@@ -64,30 +64,32 @@ export default function NotePage() {
   };
 
   const handleCreateNote = async () => {
-    try {
-      const response = await fetch("http://localhost:8000/api/notes/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: "新筆記",
-          content: "",
-          tag: ""
-        })
-      });
+  try {
+    const userId = parseInt(localStorage.getItem('userId')) || 1; // ✅ 預設為訪客 ID: 1
+    const response = await fetch("http://localhost:8000/api/notes/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: "新筆記",
+        content: "這是一筆新的內容", // 🔧 改：避免空白導致錯誤
+        tag: "",
+        user:  userId // 🔧 改：請填入你後端的使用者 ID（目前假設為 1）
+      })
+    });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("建立筆記失敗：", errorData);
-        return;
-      }
-
-      const newNote = await response.json();
-      setNotes(prev => ({ ...prev, [newNote.id]: newNote }));
-      setSelectedNote(newNote.id);
-    } catch (err) {
-      console.error("建立筆記時發生錯誤：", err);
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("建立筆記失敗：", errorData);
+      return;
     }
-  };
+
+    const newNote = await response.json();
+    setNotes(prev => ({ ...prev, [newNote.id]: newNote }));
+    setSelectedNote(newNote.id);
+  } catch (err) {
+    console.error("建立筆記時發生錯誤：", err);
+  }
+};
 
   const handleDeleteNote = async (id) => {
     try {
