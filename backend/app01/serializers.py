@@ -1,15 +1,3 @@
-# your_app_name/serializers.py
-from rest_framework import serializers
-from .models import User, Note, Tag, NoteTag
-
-
-class TagSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = Tag
-        fields = ['id', 'name']
-
-
 from rest_framework import serializers
 from .models import User, Note, Tag, NoteTag
 
@@ -22,17 +10,13 @@ class TagSerializer(serializers.ModelSerializer):
 
 
 class NoteSerializer(serializers.ModelSerializer):
-    # ✅ 回傳用：完整標籤物件
+    # 回傳 tag 詳細資訊（id + name）
     tags = TagSerializer(many=True, read_only=True)
 
-    # ✅ 寫入用：標籤名稱陣列
-    tag_names = serializers.SlugRelatedField(many=True,
-                                             slug_field='name',
-                                             queryset=Tag.objects.all(),
-                                             write_only=True,
-                                             source='tags')
+    # 接收前端傳來的名稱陣列（例如 ["Python", "AI"]）
+    tag_names = serializers.ListField(child=serializers.CharField(),
+                                      write_only=True)
 
-    # user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
     parent = serializers.PrimaryKeyRelatedField(queryset=Note.objects.all(),
                                                 allow_null=True,
                                                 required=False)
@@ -46,23 +30,24 @@ class NoteSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at']
 
     def create(self, validated_data):
-        tags_data = validated_data.pop('tags', [])
+        tag_names = validated_data.pop('tag_names', [])
+        user = validated_data['user']
         note = Note.objects.create(**validated_data)
-        note.tags.clear()
-        for tag_name in tags_data:
-            tag, _ = Tag.objects.get_or_create(name=tag_name)
+        for name in tag_names:
+            tag, _ = Tag.objects.get_or_create(user=user, name=name)
             NoteTag.objects.create(note=note, tag=tag)
         return note
 
     def update(self, instance, validated_data):
-        tags_data = validated_data.pop('tags', None)
+        tag_names = validated_data.pop('tag_names', None)
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
-        if tags_data is not None:
+        if tag_names is not None:
             instance.note_tags.all().delete()
-            for tag_name in tags_data:
-                tag, _ = Tag.objects.get_or_create(name=tag_name)
+            for name in tag_names:
+                tag, _ = Tag.objects.get_or_create(user=instance.user,
+                                                   name=name)
                 NoteTag.objects.create(note=instance, tag=tag)
         return instance
 
