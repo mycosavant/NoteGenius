@@ -1,35 +1,37 @@
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
 import "./RegisterPage.css";
 
 function UserQueryPage() {
-  const [account, setAccount] = useState('');
+  const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
   const [queryResult, setQueryResult] = useState(null);
 
-  // 一進來自動填入 input
-  useEffect(() => {
-    const user = JSON.parse(localStorage.getItem("user") || "{}");
-    if (user.account) setAccount(user.account);
-    if (user.username) setUsername(user.username);
-    if (user.password) setPassword(user.password);
-  }, []);
-
-  const handleQuery = (e) => {
+  const handleQuery = async (e) => {
     e.preventDefault();
-    if (account.trim() === "" || password.trim() === "" || username.trim() === "") {
-      alert("Please enter account, password and username");
+    if (username.trim() === "" || email.trim() === "") {
+      alert("Please enter both username and email");
       return;
     }
-    const user = JSON.parse(localStorage.getItem("user") || "{}");
-    if (
-      user.account === account &&
-      user.username === username &&
-      user.password === password
-    ) {
-      setQueryResult(user);
-    } else {
-      setQueryResult("No user found or information does not match");
+
+    try {
+      const response = await fetch("http://localhost:8000/api/users/query-password/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username, email }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || data.error) {
+        setQueryResult(data.error || "Error occurred while querying");
+      } else {
+        setQueryResult(data); // 正確的使用者資料
+      }
+    } catch (error) {
+      console.error("Fetch error:", error);
+      setQueryResult("Error occurred while querying");
     }
   };
 
@@ -39,14 +41,7 @@ function UserQueryPage() {
         <h1>NoteGenius</h1>
         <div className="Register-form-box" id="register-form">
           <form onSubmit={handleQuery}>
-            <h2>Account Inquiry</h2>
-            <input
-              type="text"
-              name="account"
-              placeholder="Account"
-              value={account}
-              onChange={(e) => setAccount(e.target.value)}
-            />
+            <h2>Password Lookup</h2>
             <input
               type="text"
               name="username"
@@ -55,22 +50,50 @@ function UserQueryPage() {
               onChange={(e) => setUsername(e.target.value)}
             />
             <input
-              type="password"
-              name="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              type="email"
+              name="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
             />
             <button type="submit" id="register-button">Query</button>
+            <p>
+              Already have an account?{" "}
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  window.location.href = "/";
+                }}
+                style={{ color: "#7494ec", textDecoration: "underline" }}
+              >
+                Login
+              </a>
+            </p>
+
+            <p style={{ marginTop: "16px" }}>
+              Don’t have an account?{" "}
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  window.location.href = "/register";
+                }}
+                style={{ color: "#7494ec", textDecoration: "underline" }}
+              >
+                Register
+              </a>
+            </p>
+
+
           </form>
+
           {queryResult && (
             <div style={{ marginTop: 20, background: "#f5f9ff", padding: 16, borderRadius: 6 }}>
               {typeof queryResult === "string" ? (
                 <span style={{ color: "#e54d42" }}>{queryResult}</span>
               ) : (
                 <>
-                  <div><b>Account:</b> {queryResult.account}</div>
-                  <div><b>Username:</b> {queryResult.username}</div>
                   <div><b>Password:</b> {queryResult.password}</div>
                 </>
               )}

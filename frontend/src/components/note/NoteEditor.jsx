@@ -1,8 +1,8 @@
-// src/components/note/NoteEditor.jsx
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Editor } from '@monaco-editor/react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import CreatableSelect from 'react-select/creatable';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 import './NoteEditor.css';
@@ -11,35 +11,49 @@ export default function NoteEditor({
   noteId,
   initialTitle,
   initialContent,
-  initialTag,        // 現在用 tag 傳入
-  tags = [],         // 標籤列表
+  initialTags = [],  // ✅ 修改為陣列
+  tags = [],
   onSave,
-  onCreateTag,       // 新增標籤
+  onCreateTag,
 }) {
   const [title, setTitle] = useState(initialTitle || '');
   const [content, setContent] = useState(initialContent || '');
-  const [tag, setTag] = useState(initialTag || '');
+  const [selectedTags, setSelectedTags] = useState(initialTags); // ✅ 多選初始化
   const [activeTab, setActiveTab] = useState('edit');
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   useEffect(() => {
-    setTag(initialTag || '');
-  }, [initialTag]);
+    setSelectedTags(initialTags);
+  }, [initialTags]);
 
   useEffect(() => {
     const saveTimer = setTimeout(() => {
-      if (noteId && (title !== initialTitle || content !== initialContent || tag !== initialTag)) {
+      if (
+        noteId &&
+        (
+          title !== initialTitle ||
+          content !== initialContent ||
+          JSON.stringify(selectedTags.sort()) !== JSON.stringify(initialTags.sort())
+        )
+      ) {
         saveNote();
       }
     }, 2000);
     return () => clearTimeout(saveTimer);
-  }, [title, content, tag]);
+  }, [title, content, selectedTags]);
+
+  // ✅ 當全域 tags 改變時，自動移除不存在的 selectedTags
+  useEffect(() => {
+    setSelectedTags(prev =>
+      prev.filter(tag => tags.includes(tag))
+    );
+  }, [tags]);
 
   const saveNote = () => {
     if (!noteId) return;
     setIsSaving(true);
-    onSave(noteId, title, content, tag);   // 儲存時傳入 tag
+    onSave(noteId, title, content, selectedTags);
     setTimeout(() => {
       setIsSaving(false);
       setSaveSuccess(true);
@@ -61,36 +75,50 @@ export default function NoteEditor({
           className="note-title-input"
         />
       </div>
+
       <div className="note-editor-toolbar">
         <div className="note-editor-tabs">
           <button className={`tab-button ${activeTab === 'edit' ? 'active' : ''}`} onClick={() => setActiveTab('edit')}>編輯</button>
           <button className={`tab-button ${activeTab === 'preview' ? 'active' : ''}`} onClick={() => setActiveTab('preview')}>預覽</button>
           <button className={`tab-button ${activeTab === 'split' ? 'active' : ''}`} onClick={() => setActiveTab('split')}>分割視圖</button>
         </div>
-        <Button onClick={saveNote} disabled={isSaving} className="save-button">{isSaving ? '保存中...' : saveSuccess ? '已保存' : '保存'}</Button>
+        <Button onClick={saveNote} disabled={isSaving} className="save-button">
+          {isSaving ? '保存中...' : saveSuccess ? '已保存' : '保存'}
+        </Button>
       </div>
-      {/* 標籤區域 */}
+
       <div className="note-metadata">
         <div className="category-selector">
           <span>標籤:</span>
-          <select value={tag || ''} onChange={(e) => setTag(e.target.value || '')}>
-            <option value="">無標籤</option>
-            {tags.map((t) => (
-              <option key={t} value={t}>{t}</option>
-            ))}
-          </select>
-          <button
-            onClick={() => {
-              const newTagValue = prompt('請輸入新標籤名稱:');
-              if (newTagValue && !tags.includes(newTagValue)) {
-                onCreateTag(newTagValue);
-                setTag(newTagValue);
+          <div style={{ flex: 1 }}>
+            <CreatableSelect
+              isMulti
+              options={tags.map(tag => ({ value: tag, label: tag }))}
+              value={selectedTags.map(tag => ({ value: tag, label: tag }))}
+              onChange={(selectedOptions) =>
+                setSelectedTags(selectedOptions.map(opt => opt.value))
               }
-            }}
-            className="add-category-button"
-          >+</button>
+              onCreateOption={(inputValue) => {
+                if (!tags.includes(inputValue)) {
+                  onCreateTag(inputValue); // 新增全域標籤
+                  setSelectedTags(prev => {
+                    const updated = [...prev, inputValue];
+                    // ✅ 自動儲存筆記，加上新標籤
+                    if (noteId) {
+                      onSave(noteId, title, content, updated);
+                    }
+                    return updated;
+                  });
+                }
+              }}
+              classNamePrefix="react-select"
+              placeholder="選擇或輸入標籤..."
+              noOptionsMessage={() => '無匹配標籤'}
+            />
+          </div>
         </div>
       </div>
+
       <div className="note-editor-content">
         {activeTab === 'edit' && (
           <Editor
