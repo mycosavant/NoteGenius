@@ -121,13 +121,15 @@ class NoteViewSet(viewsets.ModelViewSet):
         user_id = self.request.session.get('user_id')
         if not user_id:
             raise ValidationError("使用者未登入")
-        serializer.save(user_id=user_id)
+        user = get_object_or_404(User, id=user_id)
+        serializer.save(
+            user=user)  # ✅ 改為傳 user instance，搭配 NoteSerializer 裡的 user 欄位
 
     def perform_update(self, serializer):
         user_id = self.request.session.get('user_id')
         if serializer.instance.user_id != user_id:
             raise ValidationError("無權限修改此筆記")
-        serializer.save()
+        serializer.save()  # ✅ 保留原始 user 不變
 
     def perform_destroy(self, instance):
         user_id = self.request.session.get('user_id')
