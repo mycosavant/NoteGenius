@@ -11,20 +11,45 @@ export default function NotesList({
   onCreateTag,
   onRenameTag,
   onDeleteTag,
+  searchKeyword,
+  onSearchKeywordChange,
 }) {
   const safeNotes = Array.isArray(notes) ? notes : Object.entries(notes || {});
 
   const filteredNotes = safeNotes.filter(([_, note]) => {
-    if (selectedTag === 'ALL') return true;
-    if (selectedTag === 'UNTAGGED') return !note.tags || note.tags.length === 0;
-    return Array.isArray(note.tags) &&
-      note.tags.some(t => t.name === selectedTag);
+    const noteTagNames = Array.isArray(note.tags) ? note.tags.map(t => t.name) : [];
+
+    const tagMatch =
+      selectedTag === 'ALL'
+        ? true
+        : selectedTag === 'UNTAGGED'
+          ? noteTagNames.length === 0
+          : noteTagNames.includes(selectedTag);
+
+    const keyword = searchKeyword.trim().toLowerCase();
+    const keywordMatch =
+      keyword === '' ||
+      (note.title && note.title.toLowerCase().includes(keyword)) ||
+      (note.content && note.content.toLowerCase().includes(keyword)) ||
+      noteTagNames.some(tagName => tagName.toLowerCase().includes(keyword)); // ✅ 搜尋 tag 名稱
+
+    return tagMatch && keywordMatch;
   });
+
+
+
 
   return (
     <div className="notes-list">
       <div className="label-header">
         <span className="label-title">標籤</span>
+        <input
+          type="text"
+          placeholder="搜尋筆記..."
+          value={searchKeyword}
+          onChange={(e) => onSearchKeywordChange(e.target.value)}
+          style={{ width: '100%', padding: '6px', marginBottom: '10px', boxSizing: 'border-box' }}
+        />
         <button
           onClick={() => {
             const name = prompt('請輸入新標籤名稱:');
@@ -37,7 +62,10 @@ export default function NotesList({
       <div style={{ marginBottom: 10 }}>
         <div
           className={`category-item category-all${selectedTag === 'ALL' ? ' selected' : ''}`}
-          onClick={() => onSelectTag('ALL')}
+          onClick={() => {
+            onSelectTag('ALL');
+            onSearchKeywordChange(''); // 清空搜尋框
+          }}
         >
           所有筆記
         </div>
@@ -60,7 +88,10 @@ export default function NotesList({
           >
             <span
               style={{ flex: 1, cursor: 'pointer' }}
-              onClick={() => onSelectTag(tag)}
+              onClick={() => {
+                onSelectTag(tag);
+                onSearchKeywordChange(tag); // 點擊時填入搜尋框
+              }}
             >
               {tag}
             </span>
