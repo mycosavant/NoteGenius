@@ -79,8 +79,8 @@ export default function NoteEditor({
       <div className="note-editor-toolbar">
         <div className="note-editor-tabs">
           <button className={`tab-button ${activeTab === 'edit' ? 'active' : ''}`} onClick={() => setActiveTab('edit')}>編輯</button>
-          <button className={`tab-button ${activeTab === 'preview' ? 'active' : ''}`} onClick={() => setActiveTab('preview')}>預覽</button>
           <button className={`tab-button ${activeTab === 'split' ? 'active' : ''}`} onClick={() => setActiveTab('split')}>分割視圖</button>
+          <button className={`tab-button ${activeTab === 'preview' ? 'active' : ''}`} onClick={() => setActiveTab('preview')}>預覽</button>
         </div>
         <Button onClick={saveNote} disabled={isSaving} className="save-button">
           {isSaving ? '保存中...' : saveSuccess ? '已保存' : '保存'}
