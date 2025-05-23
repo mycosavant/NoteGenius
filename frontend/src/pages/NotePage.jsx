@@ -15,6 +15,7 @@ export default function NotePage() {
   const [tags, setTags] = useState([]);
   const [selectedTag, setSelectedTag] = useState('ALL');
   const [aiChatVisible, setAiChatVisible] = useState(true);
+  const [searchKeyword, setSearchKeyword] = useState('');
 
   // 取得使用者資訊
   useEffect(() => {
@@ -260,6 +261,8 @@ export default function NotePage() {
               onCreateTag={handleCreateTag}
               onRenameTag={handleRenameTag}
               onDeleteTag={handleDeleteTag}
+              searchKeyword={searchKeyword}
+              onSearchKeywordChange={setSearchKeyword}
             />
           </div>
         )}

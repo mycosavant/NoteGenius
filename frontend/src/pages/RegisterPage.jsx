@@ -46,7 +46,7 @@ function RegisterPage() {
 
       const data = await response.json();
       console.log("✅ 註冊成功：", data);
-      navigate("/category");
+      navigate("/note");
     } catch (error) {
       console.error("❌ 錯誤：", error);
       setError("發生錯誤，請稍後再試");
