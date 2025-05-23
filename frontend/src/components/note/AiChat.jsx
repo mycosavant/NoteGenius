@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Textarea } from '../ui/Textarea';
 import { Button } from '../ui/Button';
 import './AiChat.css';

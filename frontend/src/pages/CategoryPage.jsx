@@ -1,241 +1,178 @@
-import React, { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import "./CategoryPage.css";
+
+const API_BASE = 'http://localhost:8000/api';
 
 function CategoryPage() {
   const navigate = useNavigate();
 
-  // 標籤
   const [tags, setTags] = useState([]);
-  // 筆記
   const [notes, setNotes] = useState([]);
-  // 新標籤名稱
   const [newTagName, setNewTagName] = useState("");
-  // 展開的標籤
   const [expandedTag, setExpandedTag] = useState(null);
-  // 筆記編號
   const [noteCounter, setNoteCounter] = useState(1);
 
-  // 新增標籤
+  // 載入初始資料
+  useEffect(() => {
+    fetch(`${API_BASE}/notes/`)
+      .then(res => res.json())
+      .then(data => setNotes(data));
+
+    fetch(`${API_BASE}/tags/`)
+      .then(res => res.json())
+      .then(data => setTags(data));
+  }, []);
+
   const handleAddTag = () => {
     if (newTagName.trim()) {
-      setTags([...tags, { name: newTagName, notes: [] }]);
-      setNewTagName("");
+      fetch(`${API_BASE}/tags/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newTagName })
+      })
+        .then(res => res.json())
+        .then(newTag => {
+          setTags([...tags, { ...newTag, notes: [] }]);
+          setNewTagName("");
+        });
     }
   };
 
-  // 新增筆記（未分標籤）
   const handleAddNote = () => {
-    const newNote = {
-      id: Date.now(),
-      title: `Note ${noteCounter}`,
-    };
-    setNotes([...notes, newNote]);
-    setNoteCounter(noteCounter + 1);
+    const newTitle = `Note ${noteCounter}`;
+    fetch(`${API_BASE}/notes/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title: newTitle, content: "" })
+    })
+      .then(res => res.json())
+      .then(newNote => {
+        setNotes([...notes, newNote]);
+        setNoteCounter(noteCounter + 1);
+      });
   };
 
-  // 將筆記分配給標籤
   const handleAssignNoteToTag = (note, tagName) => {
+    // 要從前端刪除與更新狀態
     setNotes(notes.filter((n) => n.id !== note.id));
     setTags(
       tags.map((tag) =>
         tag.name === tagName
-          ? { ...tag, notes: [...tag.notes, note] }
+          ? { ...tag, notes: [...(tag.notes || []), note] }
           : tag
       )
     );
+    // ✅ 建立 note-tag 關聯：需補上後端支援
   };
 
-  // 刪除未分標籤的筆記
   const handleDeleteNote = (noteId) => {
-    setNotes(notes.filter((n) => n.id !== noteId));
+    fetch(`${API_BASE}/notes/${noteId}/`, {
+      method: "DELETE"
+    }).then(() => {
+      setNotes(notes.filter((n) => n.id !== noteId));
+    });
   };
 
-  // 刪除已分配到標籤的筆記
   const handleDeleteTaggedNote = (tagName, noteId) => {
     setTags(
       tags.map((tag) =>
         tag.name === tagName
-          ? { ...tag, notes: tag.notes.filter((note) => note.id !== noteId) }
+          ? {
+            ...tag,
+            notes: (tag.notes || []).filter((note) => note.id !== noteId)
+          }
           : tag
       )
     );
+    // ✅ 建議後端 API 提供移除 tag 的功能
   };
 
-  // 切換標籤展開
   const toggleExpand = (tagName) => {
     setExpandedTag(expandedTag === tagName ? null : tagName);
   };
 
-  // 查看筆記
   const handleViewNote = (noteId) => {
-    const note =
-      notes.find((n) => n.id === noteId) ||
-      tags.flatMap((t) => t.notes).find((n) => n.id === noteId);
-    if (note) {
-      // 可省略 localStorage，只靠 noteId 路由
-    }
     navigate(`/note/${noteId}`);
   };
 
-  // 登出（只修這裡，點 log out 跳回首頁！其餘完全不變）
   const handleLogout = () => {
-    navigate("/");
+    fetch(`${API_BASE}/logout/`, {
+      method: "POST"
+    }).then(() => {
+      navigate("/");
+    });
   };
 
-  // ======= 這裡才是 return ======
   return (
-    <div style={{ padding: "20px", position: "relative" }}>
-      <button
-        onClick={handleLogout}
-        style={{
-          position: "absolute",
-          top: "10px",
-          right: "10px",
-          backgroundColor: "transparent",
-          border: "none",
-          color: "#666",
-          cursor: "pointer",
-        }}
-      >
-        log out
-      </button>
+    <div className="page-container">
+      <button onClick={handleLogout} className="logout-button">log out</button>
       <h1>NoteGenius</h1>
-      <button
-        onClick={handleAddNote}
-        style={{
-          backgroundColor: "#1e3a8a",
-          color: "white",
-          padding: "10px 20px",
-          borderRadius: "6px",
-          border: "none",
-          marginBottom: "20px",
-        }}
-      >
-        新增筆記
-      </button>
+      <button onClick={handleAddNote} className="add-note-button">新增筆記</button>
+
       <h3>未分標籤筆記</h3>
       {notes.map((note) => (
-        <div key={note.id} style={{ marginBottom: "10px" }}>
+        <div key={note.id} className="note-item-inline">
           <span>{note.title}</span>
-          <button
-            onClick={() => handleViewNote(note.id)}
-            style={{
-              marginLeft: "10px",
-              backgroundColor: "#1e3a8a",
-              color: "white",
-              border: "none",
-              padding: "6px 10px",
-              borderRadius: "4px",
-            }}
-          >
-            查看
-          </button>
-          <button
-            onClick={() => handleDeleteNote(note.id)}
-            style={{
-              marginLeft: "5px",
-              backgroundColor: "#dc2626",
-              color: "white",
-              border: "none",
-              padding: "6px 10px",
-              borderRadius: "4px",
-            }}
-          >
-            刪除
-          </button>
+          <button onClick={() => handleViewNote(note.id)} className="view-button">查看</button>
+          <button onClick={() => handleDeleteNote(note.id)} className="delete-button">刪除</button>
         </div>
       ))}
-      <h3 style={{ marginTop: "30px" }}>標籤列表</h3>
-      <div style={{ display: "flex", alignItems: "center", marginBottom: "10px" }}>
+
+      <h3 className="section-title">標籤列表</h3>
+      <div className="tag-input-container">
         <input
           type="text"
           placeholder="新增標籤名稱"
           value={newTagName}
           onChange={(e) => setNewTagName(e.target.value)}
-          style={{
-            width: "50%",
-            padding: "8px",
-            borderRadius: "6px",
-            border: "1px solid #ccc",
-          }}
+          className="tag-input"
         />
-        <button
-          onClick={handleAddTag}
-          style={{
-            marginLeft: "10px",
-            width: "36px",
-            height: "36px",
-            fontSize: "18px",
-            padding: 0,
-            borderRadius: "50%",
-            backgroundColor: "#1e3a8a",
-            color: "white",
-            border: "none",
-          }}
-        >
-          +
-        </button>
+        <button onClick={handleAddTag} className="add-tag-button">+</button>
       </div>
+
       {tags.map((tag) => (
-        <div key={tag.name} style={{ marginBottom: "10px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between" }}>
+        <div key={tag.name} className="tag-block">
+          <div className="tag-header">
             <strong>{tag.name}</strong>
             <button onClick={() => toggleExpand(tag.name)}>+</button>
           </div>
+
           {expandedTag === tag.name && (
-            <div style={{ paddingLeft: "10px" }}>
+            <div className="expanded-tag-container">
               <h5>可加入的筆記：</h5>
               {notes.length === 0 ? (
                 <div>目前無可加入的筆記</div>
               ) : (
                 notes.map((note) => (
-                  <div key={note.id} style={{ marginBottom: "5px" }}>
+                  <div key={note.id} className="assign-note-block">
                     {note.title}
                     <button
                       onClick={() => handleAssignNoteToTag(note, tag.name)}
-                      style={{
-                        marginLeft: "8px",
-                        padding: "4px 8px",
-                        backgroundColor: "#1e3a8a",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "4px",
-                      }}
+                      className="view-button"
                     >
                       加入
                     </button>
                   </div>
                 ))
               )}
-              {tag.notes.length > 0 && (
+              {(tag.notes || []).length > 0 && (
                 <>
                   <h5>已分配筆記：</h5>
                   {tag.notes.map((note) => (
-                    <div key={note.id} style={{ marginLeft: "10px", marginBottom: "5px", color: "#666" }}>
+                    <div key={note.id} className="assigned-note">
                       {note.title}
                       <button
                         onClick={() => handleViewNote(note.id)}
-                        style={{
-                          marginLeft: "10px",
-                          backgroundColor: "#1e3a8a",
-                          color: "white",
-                          border: "none",
-                          padding: "4px 8px",
-                          borderRadius: "4px",
-                        }}
+                        className="view-button"
                       >
                         查看
                       </button>
                       <button
-                        onClick={() => handleDeleteTaggedNote(tag.name, note.id)}
-                        style={{
-                          marginLeft: "5px",
-                          backgroundColor: "#dc2626",
-                          color: "white",
-                          border: "none",
-                          padding: "4px 8px",
-                          borderRadius: "4px",
-                        }}
+                        onClick={() =>
+                          handleDeleteTaggedNote(tag.name, note.id)
+                        }
+                        className="delete-button"
                       >
                         刪除
                       </button>
