@@ -8,8 +8,8 @@ export default function NotesList({
   tags,
   selectedTag,
   onSelectTag,
-  onCreateTag,
   onRenameTag,
+  onRenameNote,
   onDeleteTag,
   searchKeyword,
   onSearchKeywordChange,
@@ -31,40 +31,30 @@ export default function NotesList({
       keyword === '' ||
       (note.title && note.title.toLowerCase().includes(keyword)) ||
       (note.content && note.content.toLowerCase().includes(keyword)) ||
-      noteTagNames.some(tagName => tagName.toLowerCase().includes(keyword)); // ✅ 搜尋 tag 名稱
+      noteTagNames.some(tagName => tagName.toLowerCase().includes(keyword));
 
     return tagMatch && keywordMatch;
   });
 
-
-
-
   return (
     <div className="notes-list">
       <div className="label-header">
-        <span className="label-title">標籤</span>
         <input
           type="text"
-          placeholder="搜尋筆記..."
+          placeholder="搜尋筆記名稱或是標籤..."
           value={searchKeyword}
           onChange={(e) => onSearchKeywordChange(e.target.value)}
           style={{ width: '100%', padding: '6px', marginBottom: '10px', boxSizing: 'border-box' }}
         />
-        <button
-          onClick={() => {
-            const name = prompt('請輸入新標籤名稱:');
-            if (name) onCreateTag(name);
-          }}
-          className="add-category"
-        >+</button>
       </div>
+      <span className="label-title">標籤列表</span>
 
-      <div style={{ marginBottom: 10 }}>
+      <div className="tag-list-scrollable">
         <div
           className={`category-item category-all${selectedTag === 'ALL' ? ' selected' : ''}`}
           onClick={() => {
             onSelectTag('ALL');
-            onSearchKeywordChange(''); // 清空搜尋框
+            onSearchKeywordChange('');
           }}
         >
           所有筆記
@@ -79,23 +69,17 @@ export default function NotesList({
           <div
             key={tag}
             className={`category-item category-item-custom${selectedTag === tag ? ' selected' : ''}`}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              paddingRight: '4px'
-            }}
           >
             <span
               style={{ flex: 1, cursor: 'pointer' }}
               onClick={() => {
                 onSelectTag(tag);
-                onSearchKeywordChange(tag); // 點擊時填入搜尋框
+                onSearchKeywordChange(tag);
               }}
             >
               {tag}
             </span>
-            <div style={{ display: 'flex', gap: '4px' }}>
+            <div className="tag-actions">
               <button
                 title="重新命名"
                 onClick={(e) => {
@@ -103,23 +87,21 @@ export default function NotesList({
                   const newName = prompt("請輸入新的標籤名稱:", tag);
                   if (newName && newName !== tag) onRenameTag?.(tag, newName);
                 }}
-                style={{ fontSize: '0.8rem' }}
-              >✎</button>
+              >編輯標題</button>
               <button
                 title="刪除"
                 onClick={(e) => {
                   e.stopPropagation();
                   if (window.confirm(`確定要刪除標籤「${tag}」嗎？`)) onDeleteTag?.(tag);
                 }}
-                style={{ fontSize: '0.8rem' }}
-              >🗑</button>
+              >刪除</button>
             </div>
           </div>
         ))}
       </div>
 
-      <div className="note-section-header">
-        <div className="note-section-title">筆記列表</div>
+      <span className="label-title">筆記列表</span>
+      <div className="note-section-scrollable">
         {filteredNotes.length === 0 ? (
           <div className="note-empty">沒有筆記</div>
         ) : (
@@ -128,20 +110,38 @@ export default function NotesList({
               <li
                 key={id}
                 className={`note-item note-item-custom${selectedNote === id ? ' selected' : ''}`}
-                onClick={() => onSelectNote?.(id)}
               >
-                <span className="note-title-truncate">
-                  {note.title || '（未命名）'}
-                </span>
-                <button
-                  className="delete-note"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDeleteNote?.(id);
-                  }}
+                <div
+                  className="note-title-wrapper"
+                  onClick={() => onSelectNote?.(id)}
                 >
-                  刪除
-                </button>
+                  <span className="note-title-truncate">
+                    {note.title || '（未命名）'}
+                  </span>
+                </div>
+                <div className="note-actions">
+                  <button
+                    title="編輯標題"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const newTitle = prompt('請輸入新的筆記標題：', note.title);
+                      if (newTitle && newTitle !== note.title) {
+                        onRenameNote?.(id, newTitle);
+                      }
+                    }}
+                  >
+                    編輯標題
+                  </button>
+                  <button
+                    title="刪除"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeleteNote?.(id);
+                    }}
+                  >
+                    刪除
+                  </button>
+                </div>
               </li>
             ))}
           </ul>

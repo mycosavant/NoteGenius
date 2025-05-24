@@ -142,6 +142,27 @@ export default function NotePage() {
     }
   };
 
+  const handleRenameNote = async (id, newTitle) => {
+    try {
+      const response = await fetch(`http://localhost:8000/api/notes/${id}/`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ title: newTitle }),
+      });
+
+      if (!response.ok) {
+        console.error("重新命名筆記失敗：", await response.text());
+        return;
+      }
+
+      const updatedNote = await response.json();
+      setNotes(prev => ({ ...prev, [id]: updatedNote }));
+    } catch (err) {
+      console.error("重新命名筆記時發生錯誤：", err);
+    }
+  };
+
   const handleCreateTag = async (tagName) => {
     if (!tagName || tags.includes(tagName)) return;
 
@@ -249,12 +270,21 @@ export default function NotePage() {
               <h1></h1>
               <h2>我的筆記</h2>
               <Button onClick={handleCreateNote}>新增筆記</Button>
+              <Button
+                onClick={() => {
+                  const tagName = prompt("請輸入新標籤名稱:");
+                  if (tagName) handleCreateTag(tagName);
+                }}
+              >
+                新增標籤
+              </Button>
             </div>
             <NotesList
               notes={notes}
               selectedNote={selectedNote}
               onSelectNote={setSelectedNote}
               onDeleteNote={handleDeleteNote}
+              onRenameNote={handleRenameNote}
               tags={tags}
               selectedTag={selectedTag}
               onSelectTag={setSelectedTag}

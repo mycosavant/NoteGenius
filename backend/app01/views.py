@@ -6,9 +6,9 @@ from rest_framework.exceptions import ValidationError
 from django.shortcuts import get_object_or_404
 from django.db import IntegrityError
 
-from .models import User, Note, Tag
-from .serializers import UserSerializer, NoteSerializer, TagSerializer
-from .utils import call_gemini  # 你自己的 Gemini AI 工具
+from .models import *
+from .serializers import *
+from .utils import *
 
 
 # ✅ 使用明文密碼登入
@@ -38,6 +38,24 @@ def login_view(request):
 def logout_view(request):
     request.session.flush()  # 清除所有 session
     return Response({'message': '已登出'})
+
+
+@api_view(['POST'])
+def ai_chat_view(request):
+    user_id = request.session.get('user_id')
+    if not user_id:
+        return Response({"error": "未登入"}, status=401)
+
+    prompt = request.data.get("prompt", "").strip()
+    note_id = request.data.get("note_id")
+
+    result = handle_ai_chat(user_id, prompt, note_id)
+
+    if "error" in result:
+        return Response({"error": result["error"]},
+                        status=result.get("status", 500))
+
+    return Response(result, status=result["status"])
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -136,47 +154,6 @@ class NoteViewSet(viewsets.ModelViewSet):
         if instance.user_id != user_id:
             raise ValidationError("無權限刪除此筆記")
         instance.delete()
-
-    # 根據 tag 名稱查找 note
-    @action(detail=False,
-            methods=['get'],
-            url_path='by-tag/(?P<tag_name>[^/.]+)')
-    def notes_by_tag(self, request, tag_name=None):
-        tag = get_object_or_404(Tag, name=tag_name)
-        notes = self.queryset.filter(tags=tag)
-        serializer = self.get_serializer(notes, many=True)
-        return Response(serializer.data)
-
-    # 根據 title 查詢 note
-    @action(detail=False, methods=['get'], url_path='search')
-    def search(self, request):
-        query = request.query_params.get('title', '')
-        notes = self.queryset.filter(title__icontains=query)
-        serializer = self.get_serializer(notes, many=True)
-        return Response(serializer.data)
-
-    # ✅ 新增：單筆 note 的 Gemini AI 功能
-    @action(detail=True, methods=['post'], url_path='ai')
-    def ai(self, request, pk=None):
-        note = self.get_object()
-        user_prompt = request.data.get("prompt", "").strip()
-
-        if not user_prompt:
-            return Response({"error": "請提供 prompt 文字"}, status=400)
-
-        full_prompt = f"{user_prompt}\n\n以下是筆記內容：\n{note.content}"
-
-        try:
-            result = call_gemini(full_prompt)
-        except Exception as e:
-            print("Gemini 呼叫失敗：", e)
-            return Response({"error": str(e)}, status=500)
-
-        return Response({
-            "note_id": note.id,
-            "prompt": user_prompt,
-            "result": result
-        })
 
 
 class TagViewSet(viewsets.ModelViewSet):

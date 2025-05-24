@@ -25,11 +25,13 @@ export default function AiChat({ onToggleVisibility, noteId }) {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`http://localhost:8000/api/notes/${noteId}/ai/`, {
+      const response = await fetch(`http://localhost:8000/api/ai-chat/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: input }),
+        credentials: 'include',
+        body: JSON.stringify({ prompt: input, note_id: noteId }),
       });
+
 
       const data = await response.json();
 
@@ -63,7 +65,9 @@ export default function AiChat({ onToggleVisibility, noteId }) {
       <div className="ai-chat-messages">
         {messages.map((message, index) => (
           <div key={index} className={`message ${message.role}`}>
-            <div className="message-content">{message.content}</div>
+            <div className="message-content" style={{ whiteSpace: 'pre-wrap' }}>
+              {message.content}
+            </div>
           </div>
         ))}
         {isLoading && (
