@@ -42,6 +42,7 @@ def handle_ai_chat(user_id: int, prompt: str, note_id: int) -> dict:
 
     return {
         "note_id": note.id,
+        "note_title": note.title,  # ✅ 加入這一行
         "prompt": prompt,
         "result": result,
         "status": 200

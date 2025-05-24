@@ -25,37 +25,86 @@
   padding: 1rem;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.5rem;
 }
 
-.message {
+/* ✅ 外層：控制訊息靠左或靠右 */
+.message-wrapper {
   display: flex;
-  max-width: 80%;
+  width: 100%;
+  justify-content: flex-start;
 }
 
-.message.user {
-  align-self: flex-end;
+.message-wrapper.user {
+  justify-content: flex-end;
 }
 
-.message.assistant {
-  align-self: flex-start;
+/* ✅ 每則訊息主體最大寬度為螢幕 80% */
+.message {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  max-width: 80vw;
 }
 
+/* ✅ 氣泡樣式 */
 .message-content {
+  position: relative;
   padding: 0.75rem 1rem;
-  border-radius: 0.5rem;
-  word-break: break-word;
-}
-
-.message.user .message-content {
-  background-color: #1a1a1a;
-  color: white;
-}
-
-.message.assistant .message-content {
+  border-radius: 0.75rem;
   background-color: #f3f4f6;
+  color: #111827;
+  width: fit-content;
+  max-width: 100%;
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.5;
 }
 
+/* ✅ 對話箭頭樣式 */
+.message-content::after {
+  content: '';
+  position: absolute;
+  top: 12px;
+  width: 0;
+  height: 0;
+  border: 8px solid transparent;
+}
+
+.message-wrapper.user .message-content::after {
+  right: -16px;
+  border-left-color: #f3f4f6;
+}
+
+.message-wrapper.assistant .message-content::after {
+  left: -16px;
+  border-right-color: #f3f4f6;
+}
+
+/* ✅ 輸入區塊 */
+.ai-chat-input {
+  padding: 1rem;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.chat-textarea {
+  resize: none;
+  min-height: 2.5rem;
+  max-height: 8rem;
+}
+
+/* ✅ 筆記來源提示 */
+.ai-chat-note {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+  margin-left: 1.5rem;
+  text-align: left;
+}
+
+/* ✅ 打字動畫 */
 .typing-indicator {
   display: flex;
   align-items: center;
@@ -85,30 +134,14 @@
 }
 
 @keyframes bounce {
-  0%, 80%, 100% {
+
+  0%,
+  80%,
+  100% {
     transform: translateY(0);
   }
+
   40% {
     transform: translateY(-0.5rem);
   }
-}
-
-.ai-chat-input {
-  padding: 1rem;
-  border-top: 1px solid #e5e7eb;
-  display: flex;
-  gap: 0.5rem;
-}
-
-.chat-textarea {
-  resize: none;
-  min-height: 2.5rem;
-  max-height: 8rem;
-}
-
-.ai-chat-note {
-  padding: 0 1rem 0.5rem;
-  font-size: 0.75rem;
-  color: #6b7280;
-  text-align: center;
 }
