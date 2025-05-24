@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams } from "react-router-dom";
 import NoteEditor from '../components/note/NoteEditor';
 import AiChat from '../components/note/AiChat';
@@ -9,15 +9,17 @@ import './NotePage.css';
 export default function NotePage() {
   const { noteId } = useParams();
   const [userId, setUserId] = useState(null);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [selectedNote, setSelectedNote] = useState(noteId || null);
   const [notes, setNotes] = useState({});
   const [tags, setTags] = useState([]);
   const [selectedTag, setSelectedTag] = useState('ALL');
   const [aiChatVisible, setAiChatVisible] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [searchKeyword, setSearchKeyword] = useState('');
+  const [sidebarWidth, setSidebarWidth] = useState(300);
+  const [aiChatWidth, setAiChatWidth] = useState(400);
+  const draggingRef = useRef(null);
 
-  // 取得使用者資訊
   useEffect(() => {
     fetch("http://localhost:8000/api/users/me/", { credentials: "include" })
       .then(res => {
@@ -25,34 +27,25 @@ export default function NotePage() {
         return res.json();
       })
       .then(data => setUserId(data?.id))
-      .catch(err => {
-        console.error("無法取得使用者資料", err);
-        window.location.href = "/login";
-      });
+      .catch(() => window.location.href = "/login");
   }, []);
 
-  // 載入 notes
   useEffect(() => {
     if (!userId) return;
-
     fetch("http://localhost:8000/api/notes/", { credentials: "include" })
       .then(res => res.json())
       .then(data => {
         const map = {};
         data.forEach(note => { map[note.id] = note; });
         setNotes(map);
-      })
-      .catch(err => console.error("載入 notes 失敗：", err));
+      });
   }, [userId]);
 
-  // 載入 tags
   useEffect(() => {
     if (!userId) return;
-
     fetch("http://localhost:8000/api/tags/", { credentials: "include" })
       .then(res => res.json())
-      .then(data => setTags(data.map(tag => tag.name)))
-      .catch(err => console.error("載入 tags 失敗：", err));
+      .then(data => setTags(data.map(tag => tag.name)));
   }, [userId]);
 
   useEffect(() => {
@@ -63,219 +56,190 @@ export default function NotePage() {
     localStorage.setItem('aiChatVisible', JSON.stringify(aiChatVisible));
   }, [aiChatVisible]);
 
-  const handleSaveNote = async (id, title, content, tag_names) => {
-    try {
-      const response = await fetch(`http://localhost:8000/api/notes/${id}/`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ title, content, tag_names }),
-      });
+  const handleMouseDown = (area) => (e) => {
+    draggingRef.current = { area, startX: e.clientX };
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("更新筆記失敗：", JSON.stringify(errorData, null, 2));
-        return;
-      }
-
-      const updatedNote = await response.json();
-      setNotes(prev => ({ ...prev, [id]: updatedNote }));
-    } catch (err) {
-      console.error("儲存筆記時發生錯誤：", err);
+  const handleMouseMove = (e) => {
+    if (!draggingRef.current) return;
+    const deltaX = e.clientX - draggingRef.current.startX;
+    if (draggingRef.current.area === 'sidebar') {
+      setSidebarWidth(prev => Math.min(Math.max(prev + deltaX, 200), 500));
+    } else if (draggingRef.current.area === 'aiChat') {
+      setAiChatWidth(prev => Math.min(Math.max(prev - deltaX, 200), 600));
     }
+    draggingRef.current.startX = e.clientX;
+  };
+
+  const handleMouseUp = () => {
+    draggingRef.current = null;
+    document.removeEventListener('mousemove', handleMouseMove);
+    document.removeEventListener('mouseup', handleMouseUp);
+  };
+
+  useEffect(() => () => handleMouseUp(), []);
+
+  const columns = [];
+  if (sidebarOpen) {
+    columns.push(`${sidebarWidth}px`, '5px');
+  }
+  columns.push('1fr', '5px');
+  if (aiChatVisible) {
+    columns.push(`${aiChatWidth}px`);
+  }
+  const gridTemplateColumns = columns.join(' ');
+
+  const handleSaveNote = async (id, title, content, tag_names) => {
+    const response = await fetch(`http://localhost:8000/api/notes/${id}/`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ title, content, tag_names }),
+    });
+    if (!response.ok) return;
+    const updatedNote = await response.json();
+    setNotes(prev => ({ ...prev, [id]: updatedNote }));
   };
 
   const handleCreateNote = async () => {
-    if (!userId) {
-      console.error("尚未載入 userId，無法建立筆記");
-      return;
-    }
-
-    try {
-      const response = await fetch("http://localhost:8000/api/notes/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          user: userId, // ✅ 加上這行
-          title: "新筆記",
-          content: "這是一筆新的內容",
-          tag_names: []
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error("建立筆記失敗：", JSON.stringify(errorData, null, 2));
-        return;
-      }
-
-      const newNote = await response.json();
-      setNotes(prev => ({ ...prev, [newNote.id]: newNote }));
-      setSelectedNote(newNote.id);
-    } catch (err) {
-      console.error("建立筆記時發生錯誤：", err);
-    }
+    if (!userId) return;
+    const response = await fetch("http://localhost:8000/api/notes/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        user: userId,
+        title: "新筆記",
+        content: "這是一筆新的內容",
+        tag_names: []
+      })
+    });
+    if (!response.ok) return;
+    const newNote = await response.json();
+    setNotes(prev => ({ ...prev, [newNote.id]: newNote }));
+    setSelectedNote(newNote.id);
   };
 
   const handleDeleteNote = async (id) => {
-    try {
-      const response = await fetch(`http://localhost:8000/api/notes/${id}/`, {
-        method: "DELETE",
-        credentials: "include"
-      });
-
-      if (!response.ok) {
-        console.error(`刪除筆記 ${id} 失敗：`, await response.text());
-        return;
-      }
-
-      setNotes(prev => {
-        const updated = { ...prev };
-        delete updated[id];
-        return updated;
-      });
-
-      if (selectedNote === id) setSelectedNote(null);
-    } catch (err) {
-      console.error("刪除筆記時發生錯誤：", err);
-    }
+    const response = await fetch(`http://localhost:8000/api/notes/${id}/`, {
+      method: "DELETE",
+      credentials: "include"
+    });
+    if (!response.ok) return;
+    setNotes(prev => {
+      const updated = { ...prev };
+      delete updated[id];
+      return updated;
+    });
+    if (selectedNote === id) setSelectedNote(null);
   };
 
   const handleRenameNote = async (id, newTitle) => {
-    try {
-      const response = await fetch(`http://localhost:8000/api/notes/${id}/`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ title: newTitle }),
-      });
-
-      if (!response.ok) {
-        console.error("重新命名筆記失敗：", await response.text());
-        return;
-      }
-
-      const updatedNote = await response.json();
-      setNotes(prev => ({ ...prev, [id]: updatedNote }));
-    } catch (err) {
-      console.error("重新命名筆記時發生錯誤：", err);
-    }
+    const response = await fetch(`http://localhost:8000/api/notes/${id}/`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ title: newTitle }),
+    });
+    if (!response.ok) return;
+    const updatedNote = await response.json();
+    setNotes(prev => ({ ...prev, [id]: updatedNote }));
   };
 
   const handleCreateTag = async (tagName) => {
     if (!tagName || tags.includes(tagName)) return;
-
-    try {
-      const response = await fetch("http://localhost:8000/api/tags/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ name: tagName })
-      });
-
-      if (!response.ok) {
-        const err = await response.json();
-        console.error("新增 tag 失敗：", err);
-        return;
-      }
-
-      const newTag = await response.json();
-      setTags(prev => [...prev, newTag.name]); // ✅ 更新 NotesList 使用的 tags
-    } catch (err) {
-      console.error("建立 tag 發生錯誤：", err);
-    }
+    const response = await fetch("http://localhost:8000/api/tags/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ name: tagName })
+    });
+    if (!response.ok) return;
+    const newTag = await response.json();
+    setTags(prev => [...prev, newTag.name]);
   };
 
   const handleRenameTag = async (oldName, newName) => {
-    try {
-      // 找出要更新的 tag id
-      const tagRes = await fetch("http://localhost:8000/api/tags/", { credentials: "include" });
-      const tagsData = await tagRes.json();
-      const tagToUpdate = tagsData.find(t => t.name === oldName);
-      if (!tagToUpdate) return alert("找不到標籤");
-
-      // 發送 PATCH 更新名稱
-      const res = await fetch(`http://localhost:8000/api/tags/${tagToUpdate.id}/`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ name: newName })
-      });
-
-      if (!res.ok) {
-        console.error("重新命名失敗：", await res.text());
-        return;
-      }
-
-      // ✅ 更新全域 tags 陣列
-      setTags(prev => prev.map(t => (t === oldName ? newName : t)));
-
-      // ✅ 同步更新所有筆記中的 tag 名稱
-      setNotes(prevNotes => {
-        const updated = { ...prevNotes };
-        for (const id in updated) {
-          const note = updated[id];
-          if (Array.isArray(note.tags)) {
-            const newTags = note.tags.map(t =>
-              t.name === oldName ? { ...t, name: newName } : t
-            );
-            updated[id] = { ...note, tags: newTags };
-          }
+    const res = await fetch("http://localhost:8000/api/tags/", { credentials: "include" });
+    const tagsData = await res.json();
+    const tagToUpdate = tagsData.find(t => t.name === oldName);
+    if (!tagToUpdate) return;
+    const patchRes = await fetch(`http://localhost:8000/api/tags/${tagToUpdate.id}/`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ name: newName })
+    });
+    if (!patchRes.ok) return;
+    setTags(prev => prev.map(t => (t === oldName ? newName : t)));
+    setNotes(prevNotes => {
+      const updated = { ...prevNotes };
+      for (const id in updated) {
+        const note = updated[id];
+        if (Array.isArray(note.tags)) {
+          const newTags = note.tags.map(t => t.name === oldName ? { ...t, name: newName } : t);
+          updated[id] = { ...note, tags: newTags };
         }
-        return updated;
-      });
-
-    } catch (err) {
-      console.error("重新命名標籤發生錯誤：", err);
-    }
+      }
+      return updated;
+    });
   };
 
   const handleDeleteTag = async (name) => {
-    try {
-      // 找出 tag 的 id
-      const tagRes = await fetch("http://localhost:8000/api/tags/", { credentials: "include" });
-      const tagsData = await tagRes.json();
-      const tagToDelete = tagsData.find(t => t.name === name);
-      if (!tagToDelete) return alert("找不到標籤");
-
-      const res = await fetch(`http://localhost:8000/api/tags/${tagToDelete.id}/`, {
-        method: "DELETE",
-        credentials: "include"
-      });
-
-      if (!res.ok) {
-        console.error("刪除失敗：", await res.text());
-        return;
-      }
-
-      setTags(prev => prev.filter(t => t !== name));
-    } catch (err) {
-      console.error("刪除標籤發生錯誤：", err);
-    }
+    const tagRes = await fetch("http://localhost:8000/api/tags/", { credentials: "include" });
+    const tagsData = await tagRes.json();
+    const tagToDelete = tagsData.find(t => t.name === name);
+    if (!tagToDelete) return;
+    const res = await fetch(`http://localhost:8000/api/tags/${tagToDelete.id}/`, {
+      method: "DELETE",
+      credentials: "include"
+    });
+    if (!res.ok) return;
+    setTags(prev => prev.filter(t => t !== name));
   };
 
   return (
-    <div className="note-page">
+    <>
       <div className="sidebar-toggle">
-        <Button onClick={() => setSidebarOpen(!sidebarOpen)}>
-          {sidebarOpen ? '隱藏側邊欄' : '顯示側邊欄'}
-        </Button>
+        <Button
+  variant="ghost"
+  size="icon"
+  onClick={() => setSidebarOpen(!sidebarOpen)}
+  title={sidebarOpen ? '關閉側邊欄' : '顯示側邊欄'}
+  className="sidebar-toggle-icon"
+>
+  <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2">
+    <rect x="4" y="4" width="12" height="12" rx="2" />
+    <line x1="8" y1="4" x2="8" y2="16" />
+  </svg>
+</Button>
+
+<Button
+  variant="ghost"
+  size="icon"
+  onClick={() => {
+    const html = document.documentElement;
+    html.classList.toggle('dark');
+    html.classList.toggle('light');
+  }}
+  title="切換黑色模式"
+>
+  🌓
+</Button>
       </div>
 
-      <div className="note-container">
+      <div className="note-page-grid" style={{ gridTemplateColumns }}>
         {sidebarOpen && (
           <div className="sidebar">
             <div className="sidebar-header">
-              <h1></h1>
               <h2>我的筆記</h2>
               <Button onClick={handleCreateNote}>新增筆記</Button>
-              <Button
-                onClick={() => {
-                  const tagName = prompt("請輸入新標籤名稱:");
-                  if (tagName) handleCreateTag(tagName);
-                }}
-              >
+              <Button onClick={() => {
+                const tagName = prompt("請輸入新標籤名稱:");
+                if (tagName) handleCreateTag(tagName);
+              }}>
                 新增標籤
               </Button>
             </div>
@@ -297,43 +261,49 @@ export default function NotePage() {
           </div>
         )}
 
-        <div className="main-content">
-          <div className={`editor-area ${!aiChatVisible ? 'full-width' : ''}`}>
-            {selectedNote && notes[selectedNote] ? (
-              <NoteEditor
-                key={selectedNote}
-                noteId={selectedNote}
-                initialTitle={notes[selectedNote]?.title}
-                initialContent={notes[selectedNote]?.content}
-                initialTags={(notes[selectedNote]?.tags || []).map(t => t.name)} // ✅ 傳陣列
-                tags={tags}
-                onSave={handleSaveNote}
-                onCreateTag={handleCreateTag}
-              />
+        {sidebarOpen && (
+          <div className="dragger" onMouseDown={handleMouseDown('sidebar')} />
+        )}
 
-            ) : (
-              <div style={{ textAlign: 'center', marginTop: 40, color: '#666' }}>
-                請點選左側筆記或新增一個新筆記
-              </div>
-            )}
-          </div>
+        <div className="editor-area">
+          {selectedNote && notes[selectedNote] ? (
+            <NoteEditor
+              key={selectedNote}
+              noteId={selectedNote}
+              initialTitle={notes[selectedNote]?.title}
+              initialContent={notes[selectedNote]?.content}
+              initialTags={(notes[selectedNote]?.tags || []).map((t) => t.name)}
+              tags={tags}
+              onSave={handleSaveNote}
+              onCreateTag={handleCreateTag}
+            />
+          ) : (
+            <div style={{ textAlign: 'center', marginTop: 40, color: '#666' }}>
+              請點選左側筆記或新增一個新筆記
+            </div>
+          )}
+        </div>
 
-          {aiChatVisible && selectedNote && notes[selectedNote] && (
-            <div className="ai-chat-area">
+        <div className="dragger" onMouseDown={handleMouseDown('aiChat')} />
+
+        {aiChatVisible && (
+          <div className="ai-chat-area">
+            {selectedNote && notes[selectedNote] && (
               <AiChat
                 noteId={notes[selectedNote].id}
                 onToggleVisibility={() => setAiChatVisible(!aiChatVisible)}
               />
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
 
       {!aiChatVisible && (
         <Button className="show-ai-button" onClick={() => setAiChatVisible(true)}>
-          顯示AI助手
+          顯示 AI 助手
         </Button>
       )}
-    </div>
+    </>
   );
 }
+
