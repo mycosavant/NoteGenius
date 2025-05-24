@@ -41,7 +41,12 @@ export default function AiChat({ onToggleVisibility, noteId }) {
       }
 
       const aiReply = data.result || '抱歉，AI 沒有回應內容。';
-      setMessages((prev) => [...prev, { role: 'assistant', content: aiReply }]);
+      const noteTitle = data.note_title || '';
+      setMessages((prev) => [
+        ...prev,
+        { role: 'assistant', content: aiReply, note_title: noteTitle }
+      ]);
+
     } catch (error) {
       console.error("送出錯誤：", error);
       setMessages((prev) => [
@@ -64,9 +69,17 @@ export default function AiChat({ onToggleVisibility, noteId }) {
 
       <div className="ai-chat-messages">
         {messages.map((message, index) => (
-          <div key={index} className={`message ${message.role}`}>
-            <div className="message-content" style={{ whiteSpace: 'pre-wrap' }}>
-              {message.content}
+          <div key={index} className={`message-wrapper ${message.role}`}>
+            <div>
+              <div className={`message ${message.role}`}>
+                <div className="message-content">
+                  {message.content}
+                </div>
+              </div>
+              {/* ✅ 筆記來源顯示在 AI 回應正下方 */}
+              {message.role === 'assistant' && message.note_title && (
+                <div className="ai-chat-note">筆記來源：{message.note_title}</div>
+              )}
             </div>
           </div>
         ))}
