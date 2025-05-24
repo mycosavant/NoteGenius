@@ -1,90 +1,43 @@
 .notes-list {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
+  padding: 1rem;
+  font-size: 14px;
 }
 
 .label-header {
-  flex-shrink: 0;
-}
-
-.tag-list-scrollable {
-  flex: 0 0 30%;
-  overflow-y: auto;
-  margin-bottom: 10px;
-}
-
-.note-section-scrollable {
-  flex: 0 0 50%;
-  overflow-y: auto;
+  margin-bottom: 1rem;
 }
 
 .label-title {
+  display: block;
   font-weight: bold;
-  padding: 0.5rem 1rem;
-  border-bottom: 1px solid #ccc;
-  background-color: #f8f8f8;
-  text-align: left;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.tag-list-scrollable,
+.note-section-scrollable {
+  max-height: 200px;
+  overflow-y: auto;
+  margin-bottom: 1rem;
 }
 
 .category-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.5rem 1rem;
-  border-radius: 0.375rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
   cursor: pointer;
+  transition: background 0.2s;
 }
 
-.note-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0;
-  /* 移除外層 padding */
-  margin-bottom: 0.25rem;
+.category-item:hover {
+  background-color: #f3f4f6;
 }
 
-.note-title-wrapper {
-  flex: 1;
-  min-width: 0;
-  cursor: pointer;
-  padding: 0.5rem 1rem;
-  /* 左右和標籤一致 */
-}
-
-.note-title-truncate {
-  display: block;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  text-align: left;
-  max-width: 100%;
-}
-
-.note-actions,
-.tag-actions {
-  display: flex;
-  gap: 4px;
-  min-width: 64px;
-  justify-content: flex-end;
-}
-
-.delete-note {
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  color: #999;
-  font-size: 0.875rem;
-  min-width: 48px;
-  text-align: right;
-}
-
-.note-empty {
-  padding: 1rem;
-  color: #6b7280;
-  text-align: center;
+.category-item.selected {
+  background-color: #e5e7eb;
+  font-weight: bold;
 }
 
 .notes-ul {
@@ -93,42 +46,136 @@
   margin: 0;
 }
 
-.note-actions {
+.note-item {
   display: flex;
-  gap: 4px;
-  min-width: 64px;
-  justify-content: flex-end;
-  padding-right: 1rem;
-  /* ✅ 和 category-item 的 padding 對齊 */
+  align-items: center;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  transition: background 0.2s;
 }
 
-.note-actions button,
-.tag-actions button {
-  background-color: #f0f0f0;
-  border: none;
-  padding: 4px 10px;
-  border-radius: 9999px;
-  /* 圓角 */
-  cursor: pointer;
-  transition: background-color 0.2s ease, transform 0.1s ease;
-  font-size: 0.85rem;
-  color: #333;
-}
-
-.note-actions button:hover,
-.tag-actions button:hover {
-  background-color: #d4d4d4;
-  transform: scale(1.05);
-}
-
-.category-item:hover,
 .note-item:hover {
   background-color: #f3f4f6;
-  box-shadow: 0 0 4px rgba(0, 0, 0, 0.1);
 }
 
-.category-item.selected,
 .note-item.selected {
-  background-color: #e5e7eb;
-  font-weight: bold;
+  background-color: #dbeafe;
+}
+
+.note-title-wrapper {
+  flex: 1;
+  cursor: pointer;
+}
+
+.note-title-truncate {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.note-title-edit-input {
+  width: 100%;
+  font-size: 14px;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.note-dropdown-wrapper {
+  position: relative;
+  margin-left: 0.5rem;
+}
+
+.note-dropdown-toggle {
+  background: transparent;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0 0.25rem;
+}
+
+.note-dropdown-menu {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  margin-top: 0.25rem;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  min-width: 140px;
+  overflow: hidden;
+}
+
+.note-dropdown-item {
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.note-dropdown-item:hover {
+  background: #f3f4f6;
+}
+
+.note-dropdown-item.delete {
+  color: #dc2626;
+}
+
+.collapsible {
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+.collapsible.open {
+  max-height: 500px; /* 視內容大小調整 */
+}
+
+.collapsible.closed {
+  max-height: 0;
+}
+
+.dark-toggle-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: #333;
+  color: #fff;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.dark-toggle-btn:hover {
+  background-color: #555;
+}
+
+/* AI 區與全站暗色樣式建議擴充 */
+.dark body {
+  background-color: #121212;
+  color: #e0e0e0;
+}
+.dark .sidebar,
+.dark .editor-area,
+.dark .ai-chat-area {
+  background-color: #1e1e1e;
+  color: #e0e0e0;
+}
+.dark .note-dropdown-menu {
+  background-color: #222;
+  color: white;
+  border-color: #444;
+}
+.dark .note-dropdown-item:hover {
+  background-color: #333;
+}
+.dark .category-item.selected {
+  background-color: #374151; /* 比原本更明顯 */
+  color: #fff;
 }

@@ -26,3 +26,14 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* Textarea.css 補充樣式，貼最底下 */
+body.dark textarea.textarea {
+  background-color: #1e1e1e !important;
+  color: #f1f1f1 !important;
+  border-color: #444 !important;
+}
+
+body.dark textarea.textarea::placeholder {
+  color: #888 !important;
+}

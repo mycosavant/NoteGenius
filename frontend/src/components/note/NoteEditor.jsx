@@ -11,17 +11,18 @@ export default function NoteEditor({
   noteId,
   initialTitle,
   initialContent,
-  initialTags = [],  // ✅ 修改為陣列
+  initialTags = [],
   tags = [],
   onSave,
   onCreateTag,
 }) {
   const [title, setTitle] = useState(initialTitle || '');
   const [content, setContent] = useState(initialContent || '');
-  const [selectedTags, setSelectedTags] = useState(initialTags); // ✅ 多選初始化
+  const [selectedTags, setSelectedTags] = useState(initialTags);
   const [activeTab, setActiveTab] = useState('edit');
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const isDark = document.body.classList.contains('dark'); // ✅ 自動偵測 body class
 
   useEffect(() => {
     setSelectedTags(initialTags);
@@ -43,11 +44,8 @@ export default function NoteEditor({
     return () => clearTimeout(saveTimer);
   }, [title, content, selectedTags]);
 
-  // ✅ 當全域 tags 改變時，自動移除不存在的 selectedTags
   useEffect(() => {
-    setSelectedTags(prev =>
-      prev.filter(tag => tags.includes(tag))
-    );
+    setSelectedTags(prev => prev.filter(tag => tags.includes(tag)));
   }, [tags]);
 
   const saveNote = () => {
@@ -100,10 +98,9 @@ export default function NoteEditor({
               }
               onCreateOption={(inputValue) => {
                 if (!tags.includes(inputValue)) {
-                  onCreateTag(inputValue); // 新增全域標籤
+                  onCreateTag(inputValue);
                   setSelectedTags(prev => {
                     const updated = [...prev, inputValue];
-                    // ✅ 自動儲存筆記，加上新標籤
                     if (noteId) {
                       onSave(noteId, title, content, updated);
                     }
@@ -126,7 +123,7 @@ export default function NoteEditor({
             defaultLanguage="markdown"
             value={content}
             onChange={(value) => setContent(value || '')}
-            theme="vs-light"
+            theme={isDark ? "vs-dark" : "vs-light"} // ✅ 編輯模式主題
             options={{
               minimap: { enabled: false },
               wordWrap: 'on',
@@ -136,11 +133,13 @@ export default function NoteEditor({
             }}
           />
         )}
+
         {activeTab === 'preview' && (
           <div className="markdown-preview">
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
           </div>
         )}
+
         {activeTab === 'split' && (
           <div className="split-view">
             <div className="editor-pane">
@@ -149,7 +148,7 @@ export default function NoteEditor({
                 defaultLanguage="markdown"
                 value={content}
                 onChange={(value) => setContent(value || '')}
-                theme="vs-light"
+                theme={isDark ? "vs-dark" : "vs-light"} // ✅ 分割模式主題也套用
                 options={{
                   minimap: { enabled: false },
                   wordWrap: 'on',

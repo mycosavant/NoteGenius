@@ -573,3 +573,9 @@
 .preview-pane th {
   background-color: #f9fafb;
 }
+
+/* 針對 .dark 時改背景等 */
+body.dark .note-editor {
+  background-color: #1f1f1f;
+  color: #f3f4f6;
+}
