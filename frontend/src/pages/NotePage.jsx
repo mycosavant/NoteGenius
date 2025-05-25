@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from 'react-router-dom';
 import NoteEditor from '../components/note/NoteEditor';
 import AiChat from '../components/note/AiChat';
 import NotesList from '../components/note/NotesList';
@@ -19,6 +19,7 @@ export default function NotePage() {
   const [sidebarWidth, setSidebarWidth] = useState(300);
   const [aiChatWidth, setAiChatWidth] = useState(400);
   const draggingRef = useRef(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetch("http://localhost:8000/api/users/me/", { credentials: "include" })
@@ -82,13 +83,9 @@ export default function NotePage() {
   useEffect(() => () => handleMouseUp(), []);
 
   const columns = [];
-  if (sidebarOpen) {
-    columns.push(`${sidebarWidth}px`, '5px');
-  }
+  if (sidebarOpen) columns.push(`${sidebarWidth}px`, '5px');
   columns.push('1fr', '5px');
-  if (aiChatVisible) {
-    columns.push(`${aiChatWidth}px`);
-  }
+  if (aiChatVisible) columns.push(`${aiChatWidth}px`);
   const gridTemplateColumns = columns.join(' ');
 
   const handleSaveNote = async (id, title, content, tag_names) => {
@@ -219,6 +216,19 @@ export default function NotePage() {
     setTags(prev => prev.filter(t => t !== name));
   };
 
+  const handleLogout = async () => {
+    try {
+      await fetch('http://localhost:8000/api/logout/', {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch (err) {
+      console.error('登出錯誤：', err);
+    } finally {
+      navigate('/login');
+    }
+  };
+
   return (
     <>
       <div className="sidebar-toggle">
@@ -248,6 +258,7 @@ export default function NotePage() {
               }}>
                 新增標籤
               </Button>
+              
             </div>
             <NotesList
               notes={notes}
@@ -268,9 +279,7 @@ export default function NotePage() {
           </div>
         )}
 
-        {sidebarOpen && (
-          <div className="dragger" onMouseDown={handleMouseDown('sidebar')} />
-        )}
+        {sidebarOpen && <div className="dragger" onMouseDown={handleMouseDown('sidebar')} />}
 
         <div className="editor-area">
           {selectedNote && notes[selectedNote] ? (
@@ -304,6 +313,11 @@ export default function NotePage() {
           </div>
         )}
       </div>
+        <div className="sidebar-footer-icon">
+  
+  <button className="logout-icon-btn" onClick={handleLogout}>登出</button>
+</div>
+
 
       {!aiChatVisible && (
         <Button className="show-ai-button" onClick={() => setAiChatVisible(true)}>
