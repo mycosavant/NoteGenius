@@ -18,7 +18,7 @@
 
 .note-section-scrollable,
 .tag-list-scrollable {
-  max-height: 240px;
+  max-height: 220px;
   overflow-y: auto;
   overflow-x: hidden;
   margin-bottom: 1rem;
@@ -41,9 +41,6 @@
   border-radius: 4px;
 }
 
-.tag-list-scrollable {
-  padding-right: 6px;
-}
 
 .category-item {
   display: flex;
@@ -163,12 +160,11 @@
 }
 
 .collapsible {
-  overflow: hidden;
   transition: max-height 0.3s ease;
 }
 
 .collapsible.open {
-  max-height: 500px;
+  max-height: 220px;
 }
 
 .collapsible.closed {
@@ -271,7 +267,7 @@
 }
 
 .dark .editor-tabs button {
-  background-color:  #1e293b;
+  background-color: #1e293b;
   border: none;
   color: #cbd5e1;
   padding: 6px 12px;
