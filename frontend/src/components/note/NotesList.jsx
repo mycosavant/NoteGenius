@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+// ✅ 修改後的 NotesList.jsx：使用 containerRef 解決 Dropdown 關閉與滾動條衝突
+import { useState, useEffect, useRef } from 'react';
 import './NotesList.css';
 
 export default function NotesList({
@@ -23,6 +24,7 @@ export default function NotesList({
   const [openDropdownId, setOpenDropdownId] = useState(null);
   const [openTagDropdown, setOpenTagDropdown] = useState(null);
   const [tagListOpen, setTagListOpen] = useState(true);
+  const containerRef = useRef(null);
 
   const safeNotes = Array.isArray(notes) ? notes : Object.entries(notes || {});
 
@@ -33,6 +35,19 @@ export default function NotesList({
     } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
       document.documentElement.className = 'dark';
     }
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setOpenDropdownId(null);
+        setOpenTagDropdown(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, []);
 
   const toggleTheme = () => {
@@ -48,8 +63,8 @@ export default function NotesList({
       selectedTag === 'ALL'
         ? true
         : selectedTag === 'UNTAGGED'
-          ? noteTagNames.length === 0
-          : noteTagNames.includes(selectedTag);
+        ? noteTagNames.length === 0
+        : noteTagNames.includes(selectedTag);
     const keyword = searchKeyword.trim().toLowerCase();
     const keywordMatch =
       keyword === '' ||
@@ -72,7 +87,7 @@ export default function NotesList({
   };
 
   return (
-    <div className="notes-list">
+    <div className="notes-list" ref={containerRef}>
       <div className="label-header">
         <input
           type="text"
@@ -114,7 +129,6 @@ export default function NotesList({
           <div
             key={tag}
             className={`category-item category-item-custom${selectedTag === tag ? ' selected' : ''}`}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
           >
             {editingTag === tag ? (
               <input
@@ -146,7 +160,7 @@ export default function NotesList({
                     setTempTag(tag);
                     setEditingTag(tag);
                   }}>重新命名</div>
-                  <div className="note-dropdown-item" onClick={() => onDeleteTag(tag)}>刪除</div>
+                  <div className="note-dropdown-item delete" onClick={() => onDeleteTag(tag)}>刪除</div>
                   <div className="note-dropdown-item" onClick={() => handleCreateNoteWithTag(tag)}>新增筆記</div>
                 </div>
               )}
