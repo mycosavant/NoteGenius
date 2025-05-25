@@ -16,7 +16,8 @@
   display: flex;
   flex-direction: column;
   padding: 1rem;
-   transition: width 0.3s ease, opacity 0.3s ease;
+  position: relative;
+  transition: width 0.3s ease, opacity 0.3s ease;
 }
 
 .sidebar-header {
@@ -35,6 +36,7 @@
   cursor: col-resize;
   transition: background-color 0.2s;
 }
+
 .dragger:hover {
   background-color: #888;
 }
@@ -64,6 +66,19 @@
   z-index: 100;
 }
 
+.sidebar-toggle-icon {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  z-index: 100;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+
+.sidebar-toggle-icon:hover {
+  background-color: #f3f4f6;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
 /* 右下顯示 AI 助手按鈕 */
 .show-ai-button {
   position: fixed;
@@ -78,6 +93,7 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
   transition: all 0.2s ease;
 }
+
 .show-ai-button:hover {
   background-color: #2563eb;
 }
@@ -111,19 +127,14 @@
     bottom: 0.5rem;
     right: 0.5rem;
   }
-}
-.sidebar-toggle-icon {
-  position: fixed;
-  top: 1rem;
-  left: 1rem;
-  z-index: 100;
-  transition: background 0.2s, box-shadow 0.2s;
+
+  .sidebar-footer-icon {
+    flex-direction: column;
+    bottom: 0.5rem;
+    right: 0.5rem;
+  }
 }
 
-.sidebar-toggle-icon:hover {
-  background-color: #f3f4f6;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-}
 /* 黑色模式主體樣式 */
 .dark body {
   background-color: #121212;
@@ -137,7 +148,9 @@
 
 .dark .editor-area {
   background-color: #1a1a1a;
-  border-color: #333;
+  color: #e0e0e0;
+  border-left: 1px solid #333;
+  border-right: 1px solid #333;
 }
 
 .dark .note-item:hover {
@@ -158,13 +171,6 @@
   background-color: #333;
 }
 
-.dark .editor-area {
-  background-color: #1a1a1a;
-  color: #e0e0e0;
-  border-left: 1px solid #333;
-  border-right: 1px solid #333;
-}
-
 .dark .editor-area input,
 .dark .editor-area textarea {
   background-color: #2a2a2a;
@@ -174,4 +180,64 @@
 
 .dark .editor-area .note-title-truncate {
   color: #f5f5f5;
+}
+
+/* 左下登出＋暗黑切換 */
+.sidebar-footer-icon {
+  position: fixed;
+  bottom: 2.2rem;
+  left: 15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  z-index: 100;
+}
+
+
+/* 夜間模式按鈕 */
+.dark-toggle-btn {
+  width: 36px;
+  height: 36px;
+  background-color: #333;
+  color: #fff;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+  border-radius: 50%;
+}
+
+.dark-toggle-btn:hover {
+  background-color: #555;
+}
+
+/* 登出按鈕（方形） */
+.logout-icon-btn {
+  width: 40px;
+  height: 36px;
+  background-color: #555;
+  color: white;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 10PX;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.logout-icon-btn:hover {
+  background-color: #dc2626;
+}
+
+.dark .logout-icon-btn {
+  background-color: #b91c1c;
+}
+
+.dark .logout-icon-btn:hover {
+  background-color: #991b1b;
 }
