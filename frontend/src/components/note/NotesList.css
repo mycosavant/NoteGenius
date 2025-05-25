@@ -1,8 +1,10 @@
 /* ✅ NotesList.css：整合 Dropdown、紅色刪除、可滾動、深色模式、icon/tab/三點白色修正 */
-
 .notes-list {
-  padding: 1rem;
-  font-size: 14px;
+  height: 100vh;
+  overflow: hidden;
+  /* 防止整體出現 scroll */
+  display: flex;
+  flex-direction: column;
 }
 
 .label-header {
@@ -16,9 +18,9 @@
   margin-bottom: 0.5rem;
 }
 
-.note-section-scrollable,
-.tag-list-scrollable {
-  max-height: 220px;
+.tag-list-scrollable,
+.note-section-scrollable {
+  flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
   margin-bottom: 1rem;
@@ -29,6 +31,7 @@
   scrollbar-width: thin;
   scrollbar-color: #a0aec0 transparent;
 }
+
 
 .note-section-scrollable::-webkit-scrollbar,
 .tag-list-scrollable::-webkit-scrollbar {
