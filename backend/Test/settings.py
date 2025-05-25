@@ -142,3 +142,8 @@ CORS_ALLOW_CREDENTIALS = True
 #     "http://localhost:5173",
 # ]
 CORS_ALLOW_ALL_ORIGINS = True
+
+
+# ✅ 圖片上傳與媒體檔案處理
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
