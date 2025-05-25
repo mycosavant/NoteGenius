@@ -6,6 +6,7 @@ import CategoryPage from './pages/CategoryPage';
 import RegisterPage from './pages/RegisterPage';
 import NotePage from './pages/NotePage';
 import UserQueryPage from './pages/UserQueryPage';
+import './App.css';
 
 
 function App() {
