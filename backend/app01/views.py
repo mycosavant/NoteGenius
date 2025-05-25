@@ -10,7 +10,9 @@ from .models import *
 from .serializers import *
 from .utils import *
 
-
+from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework import permissions
+from .permissions import IsSessionAuthenticated 
 # ✅ 使用明文密碼登入
 @api_view(['POST'])
 def login_view(request):
@@ -189,3 +191,20 @@ class TagViewSet(viewsets.ModelViewSet):
             note.tags.remove(instance)
 
         instance.delete()
+
+# NoteImageViewSet 用於處理筆記中的圖片上傳和管理
+from .permissions import IsSessionAuthenticated  # ← 匯入這個
+
+class NoteImageViewSet(viewsets.ModelViewSet):
+    queryset = NoteImage.objects.all()
+    serializer_class = NoteImageSerializer
+    parser_classes = [MultiPartParser, FormParser]
+    permission_classes = [IsSessionAuthenticated]  # ✅ 使用自訂 session 權限檢查
+
+    def perform_create(self, serializer):
+        user_id = self.request.session.get('user_id')
+        note_id = self.request.data.get('note')
+        if not user_id or not note_id:
+            raise ValidationError("缺少使用者或筆記 ID")
+        note = get_object_or_404(Note, id=note_id, user_id=user_id)
+        serializer.save(note=note)

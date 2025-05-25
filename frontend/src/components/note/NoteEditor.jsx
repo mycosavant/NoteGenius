@@ -22,31 +22,24 @@ export default function NoteEditor({
   const [activeTab, setActiveTab] = useState('edit');
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
-  const isDark = document.body.classList.contains('dark'); // ✅ 自動偵測 body class
+  const isDark = document.body.classList.contains('dark');
+
+  useEffect(() => setSelectedTags(initialTags), [initialTags]);
+  useEffect(() => setSelectedTags(prev => prev.filter(tag => tags.includes(tag))), [tags]);
 
   useEffect(() => {
-    setSelectedTags(initialTags);
-  }, [initialTags]);
-
-  useEffect(() => {
-    const saveTimer = setTimeout(() => {
+    const timer = setTimeout(() => {
       if (
         noteId &&
-        (
-          title !== initialTitle ||
+        (title !== initialTitle ||
           content !== initialContent ||
-          JSON.stringify(selectedTags.sort()) !== JSON.stringify(initialTags.sort())
-        )
+          JSON.stringify(selectedTags.sort()) !== JSON.stringify(initialTags.sort()))
       ) {
         saveNote();
       }
     }, 2000);
-    return () => clearTimeout(saveTimer);
+    return () => clearTimeout(timer);
   }, [title, content, selectedTags]);
-
-  useEffect(() => {
-    setSelectedTags(prev => prev.filter(tag => tags.includes(tag)));
-  }, [tags]);
 
   const saveNote = () => {
     if (!noteId) return;
@@ -59,9 +52,38 @@ export default function NoteEditor({
     }, 500);
   };
 
-  if (!noteId) {
-    return <div className="note-editor-placeholder">請選擇或創建一個筆記</div>;
-  }
+  const handleUploadImage = async (e) => {
+    const file = e.target.files[0];
+    if (!file || !noteId) return;
+
+    const formData = new FormData();
+    formData.append('note', noteId);
+    formData.append('image', file);
+
+    try {
+      const res = await fetch('http://localhost:8000/api/note-images/', {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.detail || '圖片上傳失敗');
+      }
+
+      const data = await res.json();
+      const imageUrl = data.image.startsWith('/')
+        ? `http://localhost:8000${data.image}`
+        : data.image;
+
+      setContent(prev => `${prev}\n\n![](${imageUrl})`);
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  if (!noteId) return <div className="note-editor-placeholder">請選擇或創建一個筆記</div>;
 
   return (
     <div className="note-editor">
@@ -80,6 +102,10 @@ export default function NoteEditor({
           <button className={`tab-button ${activeTab === 'split' ? 'active' : ''}`} onClick={() => setActiveTab('split')}>分割視圖</button>
           <button className={`tab-button ${activeTab === 'preview' ? 'active' : ''}`} onClick={() => setActiveTab('preview')}>預覽</button>
         </div>
+        <label className="upload-button">
+          📷 上傳圖片
+          <input type="file" accept="image/*" onChange={handleUploadImage} style={{ display: 'none' }} />
+        </label>
         <Button onClick={saveNote} disabled={isSaving} className="save-button">
           {isSaving ? '保存中...' : saveSuccess ? '已保存' : '保存'}
         </Button>
@@ -101,9 +127,7 @@ export default function NoteEditor({
                   onCreateTag(inputValue);
                   setSelectedTags(prev => {
                     const updated = [...prev, inputValue];
-                    if (noteId) {
-                      onSave(noteId, title, content, updated);
-                    }
+                    if (noteId) onSave(noteId, title, content, updated);
                     return updated;
                   });
                 }
@@ -123,7 +147,7 @@ export default function NoteEditor({
             defaultLanguage="markdown"
             value={content}
             onChange={(value) => setContent(value || '')}
-            theme={isDark ? "vs-dark" : "vs-light"} // ✅ 編輯模式主題
+            theme={isDark ? 'vs-dark' : 'vs-light'}
             options={{
               minimap: { enabled: false },
               wordWrap: 'on',
@@ -133,13 +157,20 @@ export default function NoteEditor({
             }}
           />
         )}
-
         {activeTab === 'preview' && (
           <div className="markdown-preview">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={{
+                img: ({ node, ...props }) => (
+                  <img {...props} style={{ maxWidth: '100%', height: 'auto' }} />
+                ),
+              }}
+            >
+              {content}
+            </ReactMarkdown>
           </div>
         )}
-
         {activeTab === 'split' && (
           <div className="split-view">
             <div className="editor-pane">
@@ -148,7 +179,7 @@ export default function NoteEditor({
                 defaultLanguage="markdown"
                 value={content}
                 onChange={(value) => setContent(value || '')}
-                theme={isDark ? "vs-dark" : "vs-light"} // ✅ 分割模式主題也套用
+                theme={isDark ? 'vs-dark' : 'vs-light'}
                 options={{
                   minimap: { enabled: false },
                   wordWrap: 'on',
@@ -159,7 +190,16 @@ export default function NoteEditor({
               />
             </div>
             <div className="preview-pane">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  img: ({ node, ...props }) => (
+                    <img {...props} style={{ maxWidth: '100%', height: 'auto' }} />
+                  ),
+                }}
+              >
+                {content}
+              </ReactMarkdown>
             </div>
           </div>
         )}

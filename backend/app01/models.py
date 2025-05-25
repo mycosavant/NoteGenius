@@ -85,3 +85,13 @@ class NoteTag(models.Model):
 
     def __str__(self):
         return f'{self.note.title} – {self.tag.name}'
+# NoteImage 模型用於存儲筆記中的圖片
+class NoteImage(models.Model):
+    note = models.ForeignKey(Note, on_delete=models.CASCADE, related_name='images', verbose_name='筆記')
+    image = models.ImageField(upload_to='note_images/', verbose_name='圖片')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'note_images'
+        verbose_name = '筆記圖片'
+        verbose_name_plural = '筆記圖片'
