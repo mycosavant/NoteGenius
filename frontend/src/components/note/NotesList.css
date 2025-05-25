@@ -1,3 +1,5 @@
+/* ✅ NotesList.css：整合 Dropdown、紅色刪除、可滾動、深色模式、icon/tab/三點白色修正 */
+
 .notes-list {
   padding: 1rem;
   font-size: 14px;
@@ -14,17 +16,41 @@
   margin-bottom: 0.5rem;
 }
 
-.tag-list-scrollable,
-.note-section-scrollable {
-  max-height: 200px;
+.note-section-scrollable,
+.tag-list-scrollable {
+  max-height: 240px;
   overflow-y: auto;
+  overflow-x: hidden;
   margin-bottom: 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  position: relative;
+  z-index: 1;
+  scrollbar-width: thin;
+  scrollbar-color: #a0aec0 transparent;
+}
+
+.note-section-scrollable::-webkit-scrollbar,
+.tag-list-scrollable::-webkit-scrollbar {
+  width: 6px;
+}
+
+.note-section-scrollable::-webkit-scrollbar-thumb,
+.tag-list-scrollable::-webkit-scrollbar-thumb {
+  background-color: #a0aec0;
+  border-radius: 4px;
+}
+
+.tag-list-scrollable {
+  padding-right: 6px;
 }
 
 .category-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  width: 100%;
+  box-sizing: border-box;
   padding: 0.4rem 0.6rem;
   border-radius: 6px;
   cursor: pointer;
@@ -85,7 +111,8 @@
 
 .note-dropdown-wrapper {
   position: relative;
-  margin-left: 0.5rem;
+  margin-left: auto;
+  z-index: 10;
 }
 
 .note-dropdown-toggle {
@@ -94,6 +121,9 @@
   font-size: 1.2rem;
   cursor: pointer;
   padding: 0 0.25rem;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
 }
 
 .note-dropdown-menu {
@@ -105,8 +135,10 @@
   border: 1px solid #ccc;
   border-radius: 0.5rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  z-index: 10;
+  z-index: 999;
   min-width: 140px;
+  max-width: 200px;
+  white-space: nowrap;
   overflow: hidden;
 }
 
@@ -114,7 +146,7 @@
   padding: 0.5rem 1rem;
   font-size: 0.9rem;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.2s, color 0.2s;
 }
 
 .note-dropdown-item:hover {
@@ -125,17 +157,87 @@
   color: #dc2626;
 }
 
+.note-dropdown-item.delete:hover {
+  background-color: #fee2e2;
+  color: #b91c1c;
+}
+
 .collapsible {
   overflow: hidden;
   transition: max-height 0.3s ease;
 }
 
 .collapsible.open {
-  max-height: 500px; /* 視內容大小調整 */
+  max-height: 500px;
 }
 
 .collapsible.closed {
   max-height: 0;
+}
+
+/* ✅ 深色模式支援 + icon/tab/三點修正 */
+.dark body {
+  background-color: #0f172a;
+  color: #e2e8f0;
+}
+
+.dark .sidebar,
+.dark .editor-area,
+.dark .ai-chat-area {
+  background-color: #1e293b;
+  color: #e2e8f0;
+}
+
+.dark .label-title {
+  color: #f1f5f9;
+}
+
+.dark .note-dropdown-menu {
+  background-color: #1f2937;
+  color: #f1f5f9;
+  border-color: #475569;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.6);
+}
+
+.dark .note-dropdown-item:hover {
+  background-color: #334155;
+}
+
+.dark .note-dropdown-item.delete {
+  color: #f87171;
+}
+
+.dark .note-dropdown-item.delete:hover {
+  background-color: #991b1b;
+  color: #fecaca;
+}
+
+.dark .category-item:hover {
+  background-color: #1e293b;
+}
+
+.dark .category-item.selected {
+  background-color: #334155;
+  color: #fff;
+}
+
+.dark .note-item.selected {
+  background-color: #1e40af;
+}
+
+.dark .note-title-edit-input {
+  background-color: #1e293b;
+  color: #f1f5f9;
+  border: 1px solid #475569;
+}
+
+.dark .dark-toggle-btn {
+  background-color: #475569;
+  color: #f1f5f9;
+}
+
+.dark .dark-toggle-btn:hover {
+  background-color: #64748b;
 }
 
 .dark-toggle-btn {
@@ -152,30 +254,59 @@
   cursor: pointer;
   transition: background 0.2s;
 }
+
 .dark-toggle-btn:hover {
   background-color: #555;
 }
 
-/* AI 區與全站暗色樣式建議擴充 */
-.dark body {
-  background-color: #121212;
-  color: #e0e0e0;
+/* ✅ 暗黑下 icon / tab / 下拉選單為白色 */
+.dark .sidebar-toggle-icon svg,
+.dark .note-dropdown-toggle,
+.dark .note-dropdown-toggle svg,
+.dark .editor-tabs button,
+.dark .editor-tabs button svg {
+  color: #f1f5f9;
+  stroke: #f1f5f9;
+  fill: none;
 }
-.dark .sidebar,
-.dark .editor-area,
-.dark .ai-chat-area {
-  background-color: #1e1e1e;
-  color: #e0e0e0;
+
+.dark .editor-tabs button {
+  background-color:  #1e293b;
+  border: none;
+  color: #cbd5e1;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-weight: 500;
 }
-.dark .note-dropdown-menu {
-  background-color: #222;
-  color: white;
-  border-color: #444;
+
+.dark .editor-tabs button:hover {
+  background-color: #1e293b;
+  color: #f8fafc;
 }
-.dark .note-dropdown-item:hover {
-  background-color: #333;
+
+.dark .editor-tabs button.active,
+.dark .editor-tabs button[aria-selected='true'] {
+  background-color: #f1f5f9;
+  color: #1e293b;
+  font-weight: bold;
+  border: 1px solid #e2e8f0;
 }
-.dark .category-item.selected {
-  background-color: #374151; /* 比原本更明顯 */
-  color: #fff;
+
+.dark .react-select__control {
+  background-color: #1f2937;
+  color: #f1f5f9;
+  border-color: #475569;
+}
+
+.dark .react-select__menu {
+  background-color: #1e293b;
+  color: #f1f5f9;
+}
+
+.dark .react-select__option--is-selected {
+  background-color: #334155;
+}
+
+.dark .react-select__option--is-focused {
+  background-color: #475569;
 }
