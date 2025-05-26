@@ -1,0 +1,17 @@
+資料表名稱,模型,欄位名稱,型別,限制/備註
+users,User,username,CharField(100),唯一
+users,User,email,EmailField,唯一
+users,User,password,CharField(128),
+users,User,created_at,DateTimeField,自動建立時間
+notes,Note,user,ForeignKey(User),關聯使用者，刪除連動
+notes,Note,parent,ForeignKey(self),自我關聯，可為空
+notes,Note,title,CharField(200),
+notes,Note,content,TextField,
+notes,Note,created_at,DateTimeField,自動建立時間
+tags,Tag,name,CharField(100),每位使用者唯一
+tags,Tag,user,ForeignKey(User),標籤擁有者
+note_tags,NoteTag,note,ForeignKey(Note),
+note_tags,NoteTag,tag,ForeignKey(Tag),筆記與標籤關聯
+note_images,NoteImage,note,ForeignKey(Note),對應的筆記
+note_images,NoteImage,image,ImageField,圖片路徑
+note_images,NoteImage,uploaded_at,DateTimeField,自動上傳時間
