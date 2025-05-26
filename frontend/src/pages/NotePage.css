@@ -8,7 +8,6 @@
   transition: grid-template-columns 0.05s ease;
 }
 
-/* 側邊欄 */
 .sidebar {
   background-color: #ffffff;
   border-right: 1px solid #e5e7eb;
@@ -29,19 +28,16 @@
   border-bottom: 1px solid #e5e7eb;
 }
 
-/* 拖曳條 */
 .dragger {
   width: 5px;
   background-color: #ccc;
   cursor: col-resize;
   transition: background-color 0.2s;
 }
-
 .dragger:hover {
   background-color: #888;
 }
 
-/* 編輯器 */
 .editor-area {
   background-color: #fff;
   overflow-y: auto;
@@ -50,7 +46,6 @@
   border-right: 1px solid #eee;
 }
 
-/* AI 區 */
 .ai-chat-area {
   background-color: #fcfcfc;
   overflow-y: auto;
@@ -58,7 +53,6 @@
   border-left: 1px solid #e5e7eb;
 }
 
-/* 左上固定的切換側欄按鈕 */
 .sidebar-toggle {
   position: fixed;
   top: 1rem;
@@ -79,7 +73,6 @@
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
-/* 右下顯示 AI 助手按鈕 */
 .show-ai-button {
   position: fixed;
   bottom: 1rem;
@@ -93,12 +86,10 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
   transition: all 0.2s ease;
 }
-
 .show-ai-button:hover {
   background-color: #2563eb;
 }
 
-/* 響應式（手機模式） */
 @media (max-width: 768px) {
   .note-page-grid {
     grid-template-columns: 1fr;
@@ -128,14 +119,12 @@
     right: 0.5rem;
   }
 
-  .sidebar-footer-icon {
-    flex-direction: column;
+  .sidebar-bottom-buttons {
     bottom: 0.5rem;
-    right: 0.5rem;
+    left: 0.5rem;
   }
 }
 
-/* 黑色模式主體樣式 */
 .dark body {
   background-color: #121212;
   color: #e0e0e0;
@@ -182,19 +171,15 @@
   color: #f5f5f5;
 }
 
-/* 左下登出＋暗黑切換 */
-.sidebar-footer-icon {
-  position: fixed;
-  bottom: 2.2rem;
-  left: 15rem;
+.sidebar-bottom-buttons {
+  position: absolute;
+  bottom: 1rem;
+  left: 1rem;
   display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  z-index: 100;
+  gap: 0.75rem;
+  z-index: 10;
 }
 
-
-/* 夜間模式按鈕 */
 .dark-toggle-btn {
   width: 36px;
   height: 36px;
@@ -209,12 +194,10 @@
   transition: background 0.2s;
   border-radius: 50%;
 }
-
 .dark-toggle-btn:hover {
   background-color: #555;
 }
 
-/* 登出按鈕（方形） */
 .logout-icon-btn {
   width: 40px;
   height: 36px;
@@ -225,11 +208,10 @@
   align-items: center;
   justify-content: center;
   border: none;
-  border-radius: 10PX;
+  border-radius: 10px;
   cursor: pointer;
   transition: background 0.2s;
 }
-
 .logout-icon-btn:hover {
   background-color: #dc2626;
 }
@@ -237,7 +219,6 @@
 .dark .logout-icon-btn {
   background-color: #b91c1c;
 }
-
 .dark .logout-icon-btn:hover {
   background-color: #991b1b;
 }
