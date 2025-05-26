@@ -1,0 +1,16 @@
+方法,路徑,功能說明,需登入,請求參數,回應內容
+POST,/login/,使用者登入（使用明文密碼）,否,"username, password",登入成功訊息與 user_id
+POST,/logout/,使用者登出（清除 session）,是,無,登出成功訊息
+POST,/ai-chat/,AI 筆記輔助聊天,是,"prompt, note_id",AI 回應內容
+POST,/users/,註冊新使用者,否,"username, email, password",使用者資料
+GET,/users/me/,取得自己使用者資訊,是,無,目前使用者資料
+POST,/users/query-password/,查詢帳號資訊（忘記密碼）,否,"username, email",使用者資料（無密碼）
+GET,/notes/,取得自己的所有筆記,是,無,筆記列表
+POST,/notes/,新增筆記,是,"title, content, tags...",建立成功的筆記
+PUT/PATCH,/notes/<id>/,修改筆記,是,筆記內容,更新後的筆記
+DELETE,/notes/<id>/,刪除筆記,是,無,刪除成功
+GET,/tags/,取得自己的所有標籤,是,無,標籤列表
+POST,/tags/,新增標籤,是,name,建立成功的標籤
+PUT/PATCH,/tags/<id>/,修改標籤,是,name,更新後的標籤
+DELETE,/tags/<id>/,刪除標籤,是,無,刪除成功並移除筆記連結
+POST,/note-images/,上傳圖片並綁定筆記,是,"note, image",圖片物件
