@@ -258,7 +258,6 @@ export default function NotePage() {
               }}>
                 新增標籤
               </Button>
-              
             </div>
             <NotesList
               notes={notes}
@@ -276,9 +275,17 @@ export default function NotePage() {
               onSearchKeywordChange={setSearchKeyword}
               handleCreateNoteWithTag={handleCreateNoteWithTag}
             />
+            <div className="sidebar-bottom-buttons">
+              <button className="dark-toggle-btn" onClick={() => {
+                const html = document.documentElement;
+                const next = html.classList.contains('dark') ? 'light' : 'dark';
+                html.className = next;
+                localStorage.setItem('theme', next);
+              }}>🌓</button>
+              <button className="logout-icon-btn" onClick={handleLogout}>登出</button>
+            </div>
           </div>
         )}
-
         {sidebarOpen && <div className="dragger" onMouseDown={handleMouseDown('sidebar')} />}
 
         <div className="editor-area">
@@ -313,11 +320,6 @@ export default function NotePage() {
           </div>
         )}
       </div>
-        <div className="sidebar-footer-icon">
-  
-  <button className="logout-icon-btn" onClick={handleLogout}>登出</button>
-</div>
-
 
       {!aiChatVisible && (
         <Button className="show-ai-button" onClick={() => setAiChatVisible(true)}>
