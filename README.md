@@ -63,7 +63,7 @@ AI Model:  Google Gemini API
   <img src="readme_image/edit_area.jpg" alt="偵測結果" width="600" style="border:1px solid black; border-radius:8px;" />
 </p>
 <p align="center">
-  <img src="readme_image/charbot.jpg" alt="偵測結果" width="600" style="border:1px solid black; border-radius:8px;" />
+  <img src="readme_image/chatbot.jpg" alt="偵測結果" width="600" style="border:1px solid black; border-radius:8px;" />
 </p>
 
 ## 📌 未來功能規劃
