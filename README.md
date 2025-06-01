@@ -45,25 +45,25 @@ AI Model:  Google Gemini API
 ## 📷 Demo 預覽
 
 <p align="center">
-  <img src="readme_image/login.png" alt="偵測結果" width="600" style="border:1px solid black; border-radius:8px;" />
+  <img src="readme_image/login.jpg" alt="偵測結果" width="600" style="border:1px solid black; border-radius:8px;" />
 </p>
 <p align="center">
-  <img src="readme_image/register.png" alt="偵測結果" width="600" style="border:1px solid black; border-radius:8px;" />
+  <img src="readme_image/register.jpg" alt="偵測結果" width="600" style="border:1px solid black; border-radius:8px;" />
 </p>
 <p align="center">
-  <img src="readme_image/user_query.png" alt="偵測結果" width="600" style="border:1px solid black; border-radius:8px;" />
+  <img src="readme_image/user_query.jpg" alt="偵測結果" width="600" style="border:1px solid black; border-radius:8px;" />
 </p>
 <p align="center">
-  <img src="readme_image/edit.png" alt="偵測結果" width="600" style="border:1px solid black; border-radius:8px;" />
+  <img src="readme_image/edit.jpg" alt="偵測結果" width="600" style="border:1px solid black; border-radius:8px;" />
 </p>
 <p align="center">
-  <img src="readme_image/notelist.png" alt="偵測結果" width="600" style="border:1px solid black; border-radius:8px;" />
+  <img src="readme_image/notelist.jpg" alt="偵測結果" width="600" style="border:1px solid black; border-radius:8px;" />
 </p>
 <p align="center">
-  <img src="readme_image/edit_area.png" alt="偵測結果" width="600" style="border:1px solid black; border-radius:8px;" />
+  <img src="readme_image/edit_area.jpg" alt="偵測結果" width="600" style="border:1px solid black; border-radius:8px;" />
 </p>
 <p align="center">
-  <img src="readme_image/charbot.png" alt="偵測結果" width="600" style="border:1px solid black; border-radius:8px;" />
+  <img src="readme_image/charbot.jpg" alt="偵測結果" width="600" style="border:1px solid black; border-radius:8px;" />
 </p>
 
 ## 📌 未來功能規劃
