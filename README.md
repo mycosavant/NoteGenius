@@ -23,21 +23,21 @@ AI Model: Google Gemini API
 
 ## Features
 
-### 使用者功能
+### User Features
 
-* 註冊、登入、忘記密碼
-* 個人化筆記空間
-* 筆記 CRUD（建立、查看、編輯、刪除）
-* 筆記標籤管理
-* 圖片上傳、MarkDown 編輯
-* 日夜主題切換
+  - Registration, login, password recovery
+  - Personalized note space
+  - Note CRUD (Create, Read, Update, Delete)
+  - Note tagging management
+  - Image upload, Markdown editing
+  - Light/Dark Mode Sitch
 
 ### AI（Gemini API）
 - **One-Click**:
-- Summarization
-- Translation
-- Rewriting
-- Q&A Conversations
+  - Summarization
+  - Translation
+  - Rewriting
+  - Q&A Conversations
 
 ---
 
