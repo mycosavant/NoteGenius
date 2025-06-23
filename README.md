@@ -83,7 +83,5 @@ AI Model: Google Gemini API
 
 ## 🙌 Contributors
 
-[Forked From](https://github.com/liu-chun-wu/NoteGenius)  
-<p align="center">
-  <img src="https://contrib.rocks/image?repo=liu-chun-wu/NoteGenius" alt="contributors"/>
-</p>
+[Forked From: liu-chun-wu/NoteGenius](https://github.com/liu-chun-wu/NoteGenius)  
+
